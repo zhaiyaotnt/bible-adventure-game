@@ -3,12 +3,20 @@ import Phaser from 'phaser';
 import { character, label } from '../../scenes/art.js';
 import { addItem, hasItems, inventoryCount } from '../../core/Inventory.js';
 import meadow from '../../assets/noah-meadow-concept.jpg';
+import meadowStage0 from '../../assets/noah-meadow-stage0.jpg';
+import meadowStage1 from '../../assets/noah-meadow-stage1.jpg';
+import meadowStage3 from '../../assets/noah-meadow-stage3.jpg';
 
 // A compact, hand-built RPG field. The scene owns Noah-specific quest steps;
 // movement, prompts, touch input, routing and persistence remain shared systems.
 export class MeetNoahScene extends ExploreScene {
   constructor(){super('MeetNoah');}
-  preload(){this.load.image('noah-meadow',meadow);}
+  preload(){
+    this.load.image('noah-meadow',meadow);
+    this.load.image('noah-meadow-0',meadowStage0);
+    this.load.image('noah-meadow-1',meadowStage1);
+    this.load.image('noah-meadow-3',meadowStage3);
+  }
   init({story,spawn}){this.story=story;this.savedSpawn=spawn;}
   create(){
     const app=this.game.registry.get('app'),content=this.story.content;
@@ -33,12 +41,34 @@ export class MeetNoahScene extends ExploreScene {
     if(f.preview_complete&&!f.supply_quest_complete){delete f.preview_complete;const p=this.app.save.stories[this.story.id];p.completedScenes=p.completedScenes.filter(id=>id!==this.story.entryScene);this.app.persist();}
     this.hotspot(990,570,f.met_noah?(f.supply_quest_complete?'Return to Noah':'Talk with Noah'):'Find Noah',()=>this.talkNoah(),94);
     this.hotspot(970,305,f.inspected_ark?'Explore the ark':'Inspect the ark',()=>this.inspectArk(),100);
-    if(f.inspected_ark)this.hotspot(1110,245,'Study Noah’s building plan',()=>this.studyBlueprint(),88);
+    if(f.inspected_ark)this.hotspot(1110,245,this.planLabel(),()=>this.studyBlueprint(),88);
     this.hotspot(1095,930,'Look beside the stream',()=>app.dialogue('Beside the stream',content.discovery,{fiction:true,reference:content.reference}),78);
     if(!f.log_moved)this.hotspot(850,820,'Drag the fallen log aside',()=>this.app.toast('Touch the log and drag it away from the path.'),80);
     for(const item of this.materialSpots()) if((!item.hidden||f.log_moved)&&!f[item.key])this.hotspot(item.x,item.y,item.name,()=>this.collect(item),68);
     this.hotspot(125,910,'Return to your room',()=>app.router.home(),64);
     this.updateObjective();
+    // First time back in the meadow with the ark sealed: swing the camera
+    // up to the finished ark for a small celebration, exactly once.
+    if(f.ark_sealed_done&&!f.build_celebrated){
+      f.build_celebrated=true;this.app.persist();
+      this.time.delayedCall(700,()=>this.celebrateBuild());
+    }
+  }
+  planLabel(){const f=this.flags();return f.build_unlocked&&!f.blueprint_complete?'Help build the ark':'Study Noah’s building plan';}
+  celebrateBuild(){
+    const cam=this.cameras.main;cam.stopFollow();
+    cam.pan(1020,330,1100,'Sine.easeInOut');
+    this.burst(880,290);this.burst(1090,270);
+    this.app.toast('✦ The ark is finished! Tell Noah the good news.');
+    this.time.delayedCall(2200,()=>{
+      cam.pan(this.player.x,this.player.y,700,'Sine.easeInOut',false,(camera,progress)=>{if(progress===1)camera.startFollow(this.player,true,.12,.12);});
+    });
+  }
+  showDiscovery(){
+    const d=this.story.content.discovery_build;if(!d)return;
+    const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    this.app.openModal(`<p class="overline">BIBLE DISCOVERY · GENESIS 6:14–16</p><h2>${esc(d.title)}</h2><p class="reading">${esc(d.verse)}</p><p class="reading"><b>Something to notice:</b> ${esc(d.observation)}</p><p class="reading"><b>Talk about it:</b> ${esc(d.question)}</p><p class="save-note">✦ Noah character card earned.</p><button id="close-discovery" class="primary">Keep exploring →</button>`,'reading');
+    document.getElementById('close-discovery').onclick=()=>this.app.closeModal();
   }
   flags(){return this.app.save.stories[this.story.id].questFlags;}
   inventory(){const progress=this.app.save.stories[this.story.id];progress.inventory??={};return progress.inventory;}
@@ -62,7 +92,11 @@ export class MeetNoahScene extends ExploreScene {
       const x=(i*193+61)%1500,y=(i*127+37)%1600;
       ground.fillStyle(i%4===0?0x9aaf6b:0x5d824c,.22).fillEllipse(x,y,5+(i%4)*2,2+(i%3));
     }
-    this.add.image(750,550,'noah-meadow').setDisplaySize(1500,1100).setDepth(-10);
+    // The painted ark itself grows as Aaron helps build it: bare frame,
+    // half-built hull, the original scaffolded ark, then the finished ark.
+    const f=this.flags();
+    const bgKey=f.blueprint_complete?'noah-meadow-3':f.ark_decks_done?'noah-meadow':(f.ark_ribs_done||f.blueprint_stage_one)?'noah-meadow-1':'noah-meadow-0';
+    this.add.image(750,550,bgKey).setDisplaySize(1500,1100).setDepth(-10);
     // The stream boundary follows the painted river; stepping stones remain traversable.
     const river=[{x:1190,y:530},{x:1500,y:450},{x:1500,y:1100},{x:1180,y:1050},{x:1250,y:890},{x:1175,y:760},{x:1255,y:625}];
     this.waterPolygon=new Phaser.Geom.Polygon(river);
@@ -149,7 +183,8 @@ export class MeetNoahScene extends ExploreScene {
     {key:'wood_3',item:'wood',x:900,y:865,name:'Collect wood behind the fallen log',hidden:true},
     {key:'rope_1',item:'rope',x:1120,y:660,name:'Gather rope by the riverbank'},
     {key:'rope_2',item:'rope',x:1370,y:790,name:'Search the far riverbank'},
-    {key:'tool_1',item:'tool',x:680,y:890,name:'Find the construction hammer'}
+    {key:'tool_1',item:'tool',x:680,y:890,name:'Find the construction hammer'},
+    {key:'pitch',item:'pitch',x:1070,y:875,name:'Pick up the jar of pitch'}
   ];}
   collect(item){
     const f=this.flags();
@@ -158,37 +193,43 @@ export class MeetNoahScene extends ExploreScene {
     if(item.hidden&&!this.logMoved){this.app.toast('Something may be tucked behind the fallen log.');return;}
     if(f[item.key])return;
     this.materialArt?.[item.key]?.setAlpha(.34);
-    f[item.key]=true;const amount=addItem(this.inventory(),item.item);this.app.persist();this.showFeedback(`✦  ${item.item==='wood'?'Wood':item.item==='rope'?'Rope':'Hammer'} collected · ${amount}`);
-    if(hasItems(this.inventory(),{wood:3,rope:2,tool:1})){f.supply_quest_complete=true;this.app.persist();this.burst(this.player.x,this.player.y);this.app.dialogue('Supplies gathered!',this.story.content.materials_complete,{fiction:true,reference:'Genesis 6:14–16'});}
+    f[item.key]=true;if(item.item==='pitch')f.pitch_taken=true;
+    const amount=addItem(this.inventory(),item.item);this.app.persist();this.showFeedback(`✦  ${item.item==='wood'?'Wood':item.item==='rope'?'Rope':item.item==='pitch'?'Pitch':'Hammer'} collected · ${amount}`);
+    if(hasItems(this.inventory(),{wood:3,rope:2,tool:1,pitch:1})){f.supply_quest_complete=true;this.app.persist();this.burst(this.player.x,this.player.y);this.app.dialogue('Supplies gathered!',this.story.content.materials_complete,{fiction:true,reference:'Genesis 6:14–16'});}
     this.updateObjective();
   }
   talkNoah(){
     const f=this.flags();
     if(!f.met_noah){this.app.dialogue('Noah',this.story.content.noah,{reference:this.story.content.reference,onComplete:()=>{f.met_noah=true;if(!this.app.save.discoveredCharacters.includes('noah'))this.app.save.discoveredCharacters.push('noah');this.app.persist();this.updateObjective();this.showFeedback('Quest updated · Explore the ark');}});return;}
-    if(f.supply_quest_complete){this.app.dialogue('A job well done',this.story.content.return_noah,{fiction:true,reference:this.story.content.reference,onComplete:()=>this.completeQuest()});return;}
+    if(f.blueprint_complete&&!f.preview_complete){this.app.dialogue('The ark is finished!',this.story.content.complete,{fiction:false,reference:this.story.content.reference,onComplete:()=>this.completeQuest()});return;}
+    if(f.build_unlocked){this.app.dialogue('Noah',this.story.content.build_progress,{fiction:true,reference:'Genesis 6:14–16'});return;}
+    if(f.supply_quest_complete&&f.pitch_taken){this.app.dialogue('Noah',this.story.content.build_start,{fiction:true,reference:'Genesis 6:14–16',onComplete:()=>{f.build_unlocked=true;this.app.persist();this.updateObjective();this.showFeedback('Quest updated · Help Noah build the ark');}});return;}
+    if(f.supply_quest_complete&&!f.pitch_taken){this.app.dialogue('Noah',this.story.content.pitch_reminder,{fiction:true,reference:'Genesis 6:14'});return;}
     this.app.dialogue('Noah',this.story.content.after_talk,{reference:this.story.content.reference});
   }
   inspectArk(){
     const f=this.flags();if(!f.met_noah){this.app.dialogue('The unfinished ark',this.story.content.before_noah,{fiction:false,reference:this.story.content.reference});return;}
-    if(!f.inspected_ark){f.inspected_ark=true;this.app.persist();this.updateObjective();this.burst(970,305);this.app.dialogue('The ark',this.story.content.ark,{reference:'Genesis 6:14–16',onComplete:()=>{this.hotspot(1110,245,'Study Noah’s building plan',()=>this.studyBlueprint(),88);this.updateObjective();}});return;}
+    if(!f.inspected_ark){f.inspected_ark=true;this.app.persist();this.updateObjective();this.burst(970,305);this.app.dialogue('The ark',this.story.content.ark,{reference:'Genesis 6:14–16',onComplete:()=>{this.hotspot(1110,245,this.planLabel(),()=>this.studyBlueprint(),88);this.updateObjective();}});return;}
+    if(f.blueprint_complete){this.app.dialogue('The finished ark',this.story.content.ark_finished,{fiction:true,reference:'Genesis 6:14–16'});return;}
     this.app.dialogue('The ark',this.story.content.ark,{reference:'Genesis 6:14–16'});
   }
   studyBlueprint(){
     const f=this.flags();
     if(!f.met_noah){this.app.dialogue('A careful look',this.story.content.before_noah,{fiction:false,reference:this.story.content.reference});return;}
+    if(f.blueprint_complete){this.app.dialogue('Noah’s building plan',this.story.content.blueprint_finished,{fiction:false,reference:'Genesis 6:14–16'});return;}
+    if(!f.build_unlocked){this.app.dialogue('Noah’s building plan',this.story.content.build_locked,{fiction:false,reference:'Genesis 6:14–16'});return;}
     if(!f.blueprint_discovered){
       f.blueprint_discovered=true;this.app.persist();this.updateObjective();
       this.app.dialogue('Noah’s building plan',this.story.content.blueprint_clue,{fiction:false,reference:'Genesis 6:14–16',onComplete:()=>this.app.router.story(this.story.id,'ark_blueprint')});
       return;
     }
-    if(f.blueprint_complete){this.app.dialogue('Noah’s building plan',this.story.content.blueprint_finished,{fiction:false,reference:'Genesis 6:14–16'});return;}
     this.app.router.story(this.story.id,'ark_blueprint');
   }
   completeQuest(){
-    const f=this.flags(),p=this.app.save.stories[this.story.id];f.preview_complete=true;
+    const f=this.flags(),p=this.app.save.stories[this.story.id];f.preview_complete=true;f.noah_card_earned=true;
     if(!p.completedScenes.includes(this.story.entryScene))p.completedScenes.push(this.story.entryScene);
     this.app.persist();this.updateObjective();this.burst(990,570);
-    this.app.dialogue('Chapter explored!',this.story.content.complete,{fiction:false,reference:this.story.content.reference});
+    this.showDiscovery();
   }
   showFeedback(message){this.app.toast(message);}
   burst(x,y){
@@ -196,8 +237,9 @@ export class MeetNoahScene extends ExploreScene {
     for(let i=0;i<16;i++){const a=i*Math.PI/8,star=this.add.text(x,y,'✦',{fontSize:'16px',color:'#fff0a8'}).setOrigin(.5).setDepth(1200);this.tweens.add({targets:star,x:x+Math.cos(a)*65,y:y+Math.sin(a)*55,alpha:0,scale:.25,duration:560,onComplete:()=>star.destroy()});}
   }
   updateObjective(){
-    const f=this.flags(),bag=this.inventory(),wood=inventoryCount(bag,'wood'),rope=inventoryCount(bag,'rope'),tool=inventoryCount(bag,'tool');
-    const objective=f.blueprint_discovered&&!f.blueprint_complete?'Restore the ark’s shape, then fit its three decks.':f.blueprint_complete&&!f.supply_quest_complete?'Plan restored! Explore the meadow for Noah’s supplies.':f.preview_complete&&f.supply_quest_complete?'Meadow explored! Keep exploring, or return to your room.':!f.met_noah?'Find Noah somewhere in the meadow.':!f.inspected_ark?'Take a closer look at the ark.':!f.supply_quest_complete?`Find supplies: wood ${wood}/3 · rope ${rope}/2 · tool ${tool}/1`:'Return to Noah with the supplies.';
+    const f=this.flags(),bag=this.inventory(),wood=inventoryCount(bag,'wood'),rope=inventoryCount(bag,'rope'),tool=inventoryCount(bag,'tool'),pitch=inventoryCount(bag,'pitch');
+    const ribs=f.ark_ribs_done||f.blueprint_stage_one;
+    const objective=f.preview_complete?'Chapter complete! Keep exploring, or return to your room.':f.blueprint_complete?'Tell Noah the ark is finished!':f.build_unlocked?`Build the ark with Noah: ribs ${ribs?'✓':'…'} · decks ${f.ark_decks_done?'✓':'…'} · sealing …`:!f.met_noah?'Find Noah somewhere in the meadow.':!f.inspected_ark?'Take a closer look at the ark.':!f.supply_quest_complete?`Find supplies: wood ${wood}/3 · rope ${rope}/2 · tool ${tool}/1 · pitch ${pitch}/1`:'Return to Noah with the supplies.';
     this.app.showHUD('Noah’s Meadow',objective,'NOAH’S ARK · CHAPTER 01');
     this.hotspots=this.hotspots.filter(h=>{const item=this.materialSpots().find(i=>i.x===h.x&&i.y===h.y);return !item||!f[item.key];});
   }
