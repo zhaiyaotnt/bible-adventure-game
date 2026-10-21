@@ -91,7 +91,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
   X(x){return this.CX+x*this.S;}
   Y(y){return this.BASE+y*this.S;}
   drawStage(){
-    this.board.removeAll(true);this.pieces=[];this.slots=[];this.rainButton=null;this.rotateBtn=null;
+    this.board.removeAll(true);this.pieces=[];this.slots=[];this.rainButton=null;this.rotateBtn=null;this.zones=[];
     this.addTopButton();
     this.drawArkBase();
     if(this.stage===1)this.drawRibStage();
@@ -100,9 +100,9 @@ export class ArkBlueprintScene extends Phaser.Scene {
   }
   addTopButton(){
     // Portrait: pin to the top-left corner — centred, it overlaps the title.
-    const b=this.add.text(this.phonePortrait?14:876,this.phonePortrait?14:64,'← Meadow',{fontFamily:'Arial',fontSize:this.phonePortrait?'19px':'15px',color:ink,backgroundColor:'#e2d1a7',padding:{x:13,y:10}}).setOrigin(this.phonePortrait?0:1,0).setInteractive({useHandCursor:true});
+    const b=this.add.text(this.phonePortrait?118:876,this.phonePortrait?16:64,'← Meadow',{fontFamily:'Arial',fontSize:this.phonePortrait?'19px':'15px',color:ink,backgroundColor:'#e2d1a7',padding:{x:13,y:10}}).setOrigin(this.phonePortrait?0:1,0).setInteractive({useHandCursor:true});
     b.on('pointerdown',()=>this.leave());
-    this.board.add(b);
+    this.board.add(b);this.addZone(b,()=>this.leave());
   }
   stageTitle(title,sub){
     // Portrait now frames the whole stage at fit zoom (~0.31), which
@@ -171,7 +171,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
     // and bottom-edge buttons can fall outside the visible area.
     const rotate=this.add.text(480,this.phonePortrait?182:172,'↻  Rotate selected rib   ·   R',{fontFamily:'Arial',fontSize:this.phonePortrait?'20px':'15px',color:'#fff2cf',backgroundColor:'#35594c',padding:{x:16,y:10}}).setOrigin(.5).setInteractive({useHandCursor:true});
     rotate.on('pointerdown',()=>this.rotateSelected());
-    this.board.add(rotate);this.rotateBtn=rotate;
+    this.board.add(rotate);this.rotateBtn=rotate;this.addZone(rotate,()=>this.rotateSelected());
   }
   // ---- Stage 2: support posts, then decks ----
   drawDeckStage(){
@@ -248,7 +248,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
     if(this.rainButton)return;
     const btn=this.add.text(480,this.phonePortrait?182:174,'🌧  Test it with rain',{fontFamily:'Arial',fontSize:this.phonePortrait?'21px':'17px',fontStyle:'bold',color:'#fff2cf',backgroundColor:'#2e5d8a',padding:{x:20,y:12}}).setOrigin(.5).setInteractive({useHandCursor:true});
     btn.on('pointerdown',()=>this.rainTest());
-    this.board.add(btn);this.rainButton=btn;
+    this.board.add(btn);this.rainButton=btn;this.addZone(btn,()=>this.rainTest());
   }
   rainTest(){
     if(this.raining)return;this.raining=true;this.rainButton?.destroy();this.rainButton=null;
@@ -325,9 +325,18 @@ export class ArkBlueprintScene extends Phaser.Scene {
   // on container pieces proved unreliable on touch devices (ribs could
   // not be selected at all), while scene-level pointer input is the same
   // path that reliably drives walking in the explore scenes.
+  // Buttons in this scene are tapped through the same scene-level path
+  // as the pieces: game-object input on objects inside the board
+  // container proved unreliable on touch devices (the Rotate button did
+  // not respond at all on the user's iPhone), so each button registers a
+  // plain rectangle zone computed from its position and text size.
+  addZone(btn,action){
+    const w=btn.width,h=btn.height;
+    (this.zones??=[]).push({left:btn.x-btn.originX*w,top:btn.y-btn.originY*h,right:btn.x+(1-btn.originX)*w,bottom:btn.y+(1-btn.originY)*h,action});
+  }
   pickAt(pointer){
     if(this.app.isBlocked()||this.raining)return;
-    for(const btn of [this.rotateBtn,this.rainButton])if(btn&&btn.getBounds().contains(pointer.worldX,pointer.worldY))return;
+    for(const z of this.zones??[])if(pointer.worldX>=z.left&&pointer.worldX<=z.right&&pointer.worldY>=z.top&&pointer.worldY<=z.bottom){z.action();return;}
     for(const piece of [...this.pieces].reverse()){
       if(piece.placed)continue;
       const off=piece.arcOffsetY||0,cos=Math.cos(piece.rotation),sin=Math.sin(piece.rotation);
@@ -440,18 +449,18 @@ export class ArkBlueprintScene extends Phaser.Scene {
     this.time.delayedCall(800,()=>this.drawCompletion());
   }
   drawCompletion(){
-    this.stage=0;this.visualStage=3;this.board.removeAll(true);this.pieces=[];this.slots=[];
+    this.stage=0;this.visualStage=3;this.board.removeAll(true);this.pieces=[];this.slots=[];this.zones=[];
     this.addTopButton();
     this.drawArkBase();
     this.board.add(this.add.text(480,180,'The ark is finished!',{fontFamily:'Georgia',fontSize:'36px',fontStyle:'bold',color:'#2e4a3e'}).setOrigin(.5));
     this.board.add(this.add.text(480,238,'Ribs, decks, door, window — and pitch on every seam. It passed the rain test.',{fontFamily:'Arial',fontSize:'17px',color:'#42503f',align:'center',wordWrap:{width:680}}).setOrigin(.5));
     this.board.add(this.add.text(480,282,'Noah built it just as God described in Genesis 6:14–16.',{fontFamily:'Georgia',fontSize:'16px',color:'#7a6749'}).setOrigin(.5));
     const btn=this.add.text(480,360,'Tell Noah the good news  →',{fontFamily:'Arial',fontSize:'18px',fontStyle:'bold',color:'#fff2cf',backgroundColor:'#35594c',padding:{x:25,y:15}}).setOrigin(.5).setInteractive({useHandCursor:true});
-    btn.on('pointerdown',()=>this.returnToMeadow());this.board.add(btn);
+    btn.on('pointerdown',()=>this.returnToMeadow());this.board.add(btn);this.addZone(btn,()=>this.returnToMeadow());
     this.app.showHUD('Build the Ark','The ark is finished! Tell Noah the good news.','GENESIS 6:14–16 · BUILDING WITH NOAH');
   }
   leave(){this.returnToMeadow();}
   returnToMeadow(){this.app.router.story(this.story.id,'meet_noah',{x:980,y:550});}
-  ping(x,y,message){this.feedback?.destroy();this.feedback=this.add.text(x,y,message,{fontFamily:'Arial',fontSize:'14px',fontStyle:'bold',color:'#fff5d8',backgroundColor:'#29483f',padding:{x:10,y:8}}).setOrigin(.5).setDepth(70);this.time.delayedCall(1700,()=>this.feedback?.destroy());}
+  ping(x,y,message){this.feedback?.destroy();this.feedback=this.add.text(x,y,message,{fontFamily:'Arial',fontSize:this.phonePortrait?'19px':'14px',fontStyle:'bold',color:'#fff5d8',backgroundColor:'#29483f',padding:{x:10,y:8}}).setOrigin(.5).setDepth(70);this.time.delayedCall(1700,()=>this.feedback?.destroy());}
   celebrate(x,y){if(this.app.save.settings.reducedMotion)return;for(let i=0;i<24;i++){const angle=i*Math.PI/12,star=this.add.text(x,y,'✦',{fontSize:'18px',color:i%2?'#e8c96f':'#b07d48'}).setOrigin(.5).setDepth(65);this.tweens.add({targets:star,x:x+Math.cos(angle)*115,y:y+Math.sin(angle)*80,alpha:0,scale:.2,duration:700,onComplete:()=>star.destroy()});}}
 }
