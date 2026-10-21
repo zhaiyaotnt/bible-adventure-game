@@ -20,6 +20,7 @@ export class MeetNoahScene extends ExploreScene {
     this.bounds={left:36,right:1464,top:92,bottom:1034};
     const cameraBounds=()=>window.innerHeight>window.innerWidth?this.cameras.main.setBounds(-400,0,2300,1100):this.cameras.main.setBounds(0,0,1500,1100);
     cameraBounds();this.scale.on('resize',cameraBounds);this.events.once('shutdown',()=>this.scale.off('resize',cameraBounds));
+    this.cameraManagedByScene=true;
     this.cameras.main.startFollow(this.player,true,.12,.12);
     this.cameras.main.setZoom(window.innerHeight > window.innerWidth ? 0.46 : 1.08);
     this.buildPeopleAndProps();
