@@ -4,7 +4,7 @@ export class ExploreScene extends Phaser.Scene {
   setup(app, spawn) {
     this.app=app; this.bounds={left:45,right:915,top:175,bottom:583}; this.hotspots=[]; this.walls=[]; this.direction='down'; this.velocity={x:0,y:0}; this.elapsed=0;
     character(this,'aaron',0xc67b4a,0x4d3e32);
-    this.player=this.add.image(spawn.x,spawn.y,'aaron-down-0').setOrigin(.5,.85).setDepth(10).setScale(.65);
+    this.player=this.add.image(spawn.x,spawn.y,'aaron-down-0').setOrigin(.5,.85).setDepth(10).setScale(.8);
     this.player.setInteractive({ useHandCursor:false });
     // Direct touch movement, Poké Run style: no joystick. Tap the world and
     // Aaron walks to that point; hold and drag and he follows your finger in
@@ -16,7 +16,14 @@ export class ExploreScene extends Phaser.Scene {
       if(app.isBlocked())return;
       if((this.draggableObjects??[]).some(o=>o.getBounds?.().contains(pointer.worldX,pointer.worldY)))return;
       this.touchPointerId=pointer.id; this.touchStuck=0;
-      this.moveTarget={x:pointer.worldX,y:pointer.worldY};
+      let target={x:pointer.worldX,y:pointer.worldY};
+      // Tapping near something interesting means "go there": aim at the
+      // hotspot itself so a slightly-off fingertip still arrives.
+      const nearHotspot=this.hotspots.find(h=>Phaser.Math.Distance.Between(target.x,target.y,h.x,h.y)<48);
+      if(nearHotspot)target={x:nearHotspot.x,y:nearHotspot.y};
+      // Scenes can adjust targets (e.g. snap a tap in the river to the
+      // nearest stepping stone) so taps land somewhere Aaron can stand.
+      this.moveTarget=this.adjustTarget?.(target)??target;
     });
     this.input.on('pointermove',pointer=>{
       if(pointer.id===this.touchPointerId&&pointer.isDown)this.moveTarget={x:pointer.worldX,y:pointer.worldY};
@@ -25,19 +32,26 @@ export class ExploreScene extends Phaser.Scene {
     this.input.on('pointerup',releaseTouch);
     this.input.on('pointerupoutside',releaseTouch);
     this.input.on('pointercancel',releaseTouch);
-    // The camera always follows Aaron. The game is scaled ENVELOP, which
-    // crops the overflow on mismatched screen shapes, so zoom in just
-    // enough that the cropped slice can still keep him in view; a scene
-    // that manages its own camera (Noah's meadow) opts out via the flag.
+    // The camera always follows Aaron. The game is scaled ENVELOP: the
+    // canvas keeps the game's aspect and the browser centre-crops the
+    // overflow, so the visible slice is set by the PARENT element's shape,
+    // not the canvas size. Zoom from the parent's aspect (sqrt of the
+    // aspect mismatch keeps portrait phones readable without going
+    // extreme) and pad the camera bounds by half a viewport on every
+    // side, so follow can keep Aaron centred even at the world's edges
+    // instead of clamping a fixed frame he walks out of. A scene that
+    // manages its own camera (Noah's meadow) opts out via the flag.
     this.world={width:960,height:640}; this.cameraManagedByScene=false;
     this.fitCamera=()=>{
       if(this.cameraManagedByScene)return;
-      const cam=this.cameras.main,display=this.scale.displaySize,game=this.scale.gameSize;
-      cam.setBounds(0,0,this.world.width,this.world.height);
+      const cam=this.cameras.main,parent=this.scale.parentSize,game=this.scale.gameSize;
+      const parentAspect=parent.width/Math.max(1,parent.height),gameAspect=game.width/game.height;
+      const ratio=Math.max(gameAspect/parentAspect,parentAspect/gameAspect);
+      const zoom=Phaser.Math.Clamp(Math.sqrt(ratio),1,2);
+      cam.setZoom(zoom);
+      const viewW=game.width/zoom,viewH=game.height/zoom;
+      cam.setBounds(-viewW/2,-viewH/2,this.world.width+viewW,this.world.height+viewH);
       cam.startFollow(this.player,true,.12,.12);
-      const parentAspect=display.width/Math.max(1,display.height),gameAspect=game.width/game.height;
-      const zoom=Math.max(gameAspect/parentAspect,parentAspect/gameAspect);
-      cam.setZoom(Math.max(1,zoom)*1.02);
     };
     this.fitCamera();
     this.scale.on('resize',this.fitCamera);
@@ -64,15 +78,19 @@ export class ExploreScene extends Phaser.Scene {
     let dx=this.draggingLog?0:(keyX||keyY?keyX:this.app.input.vector.x);
     let dy=this.draggingLog?0:(keyX||keyY?keyY:this.app.input.vector.y);
     if(keyX||keyY)this.moveTarget=null;
+    let touchFactor=1;
     if(!this.draggingLog&&!keyX&&!keyY&&this.moveTarget){
       const tx=this.moveTarget.x-this.player.x,ty=this.moveTarget.y-this.player.y,td=Math.hypot(tx,ty);
-      if(td<8){this.moveTarget=null;dx=0;dy=0;}
-      else{dx=tx/td;dy=ty/td;}
+      if(td<6){this.moveTarget=null;dx=0;dy=0;}
+      else{dx=tx/td;dy=ty/td;touchFactor=Phaser.Math.Clamp(td/70,.22,1);}
     }
     const length=Math.hypot(dx,dy),dt=Math.min(delta,40)/1000;
     if(length>1){dx/=length;dy/=length;}
-    const speed=170,acceleration=1050,deceleration=1350;
-    const desiredX=dx*speed,desiredY=dy*speed;
+    // Ease into tap targets: full speed when far, braking over the last
+    // stretch, so Aaron stops ON the tapped point instead of striding
+    // past it and ending up a body-length away from where you aimed.
+    const speed=158,acceleration=1200,deceleration=1750;
+    const desiredX=dx*speed*touchFactor,desiredY=dy*speed*touchFactor;
     const approach=(value,target,amount)=>value<target?Math.min(value+amount,target):Math.max(value-amount,target);
     this.velocity.x=approach(this.velocity.x,desiredX,(length?acceleration:deceleration)*dt);
     this.velocity.y=approach(this.velocity.y,desiredY,(length?acceleration:deceleration)*dt);
@@ -92,7 +110,7 @@ export class ExploreScene extends Phaser.Scene {
       if(Math.hypot(this.player.x-prevX,this.player.y-prevY)<0.2){this.touchStuck+=dt;if(this.touchStuck>0.35){this.moveTarget=null;this.touchStuck=0;}}
       else this.touchStuck=0;
     }
-    this.player.setTexture(`aaron-${this.direction}-${moving ? 2+Math.floor(time/150)%2 : Math.floor(time/720)%2}`);
+    this.player.setTexture(`aaron-${this.direction}-${moving ? 2+Math.floor(time/125)%2 : Math.floor(time/720)%2}`);
     this.player.setDepth(this.player.y);
     if(this.app.save.current.location==='story') { this.app.save.current.x=this.player.x; this.app.save.current.y=this.player.y; }
     this.nearby=this.hotspots.map(h=>({...h,d:Phaser.Math.Distance.Between(this.player.x,this.player.y,h.x,h.y)})).filter(h=>h.d<h.radius).sort((a,b)=>a.d-b.d)[0];

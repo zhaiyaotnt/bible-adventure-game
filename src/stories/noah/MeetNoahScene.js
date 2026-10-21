@@ -18,11 +18,14 @@ export class MeetNoahScene extends ExploreScene {
     // Old preview saves can resume on top of the fallen log, now a new landmark.
     if(!this.canStand(this.player.x,this.player.y)||Phaser.Math.Distance.Between(this.player.x,this.player.y,850,820)<112||spawn.y>700)this.player.setPosition(820,510);
     this.bounds={left:36,right:1464,top:92,bottom:1034};
-    const cameraBounds=()=>window.innerHeight>window.innerWidth?this.cameras.main.setBounds(-400,0,2300,1100):this.cameras.main.setBounds(0,0,1500,1100);
+    const cameraBounds=()=>this.cameras.main.setBounds(-550,-350,2600,1800);
     cameraBounds();this.scale.on('resize',cameraBounds);this.events.once('shutdown',()=>this.scale.off('resize',cameraBounds));
     this.cameraManagedByScene=true;
     this.cameras.main.startFollow(this.player,true,.12,.12);
-    this.cameras.main.setZoom(window.innerHeight > window.innerWidth ? 0.46 : 1.08);
+    // Portrait used to zoom all the way out to 0.46 to fit the wide map,
+    // which made Aaron and the props tiny and fuzzy on a phone. Zoom in
+    // close to landscape level and let the follow camera do the travelling.
+    this.cameras.main.setZoom(window.innerHeight > window.innerWidth ? 0.95 : 1.08);
     this.buildPeopleAndProps();
     const f=this.flags();
     // Previous preview saves could mark this scene complete after only two
@@ -33,7 +36,7 @@ export class MeetNoahScene extends ExploreScene {
     if(f.inspected_ark)this.hotspot(1110,245,'Study Noah’s building plan',()=>this.studyBlueprint(),88);
     this.hotspot(1095,930,'Look beside the stream',()=>app.dialogue('Beside the stream',content.discovery,{fiction:true,reference:content.reference}),78);
     if(!f.log_moved)this.hotspot(850,820,'Drag the fallen log aside',()=>this.app.toast('Touch the log and drag it away from the path.'),80);
-    for(const item of this.materialSpots()) if((!item.hidden||f.log_moved)&&!f[item.key])this.hotspot(item.x,item.y,item.name,()=>this.collect(item),58);
+    for(const item of this.materialSpots()) if((!item.hidden||f.log_moved)&&!f[item.key])this.hotspot(item.x,item.y,item.name,()=>this.collect(item),68);
     this.hotspot(125,910,'Return to your room',()=>app.router.home(),64);
     this.updateObjective();
   }
@@ -41,8 +44,16 @@ export class MeetNoahScene extends ExploreScene {
   inventory(){const progress=this.app.save.stories[this.story.id];progress.inventory??={};return progress.inventory;}
   canStand(x,y){
     if(!super.canStand(x,y))return false;
-    if(Phaser.Geom.Polygon.Contains(this.waterPolygon,x,y))return this.steppingStones.some(([sx,sy])=>Phaser.Math.Distance.Between(x,y,sx,sy)<43);
+    if(Phaser.Geom.Polygon.Contains(this.waterPolygon,x,y))return this.steppingStones.some(([sx,sy])=>Phaser.Math.Distance.Between(x,y,sx,sy)<50);
     return true;
+  }
+  // A tap in the stream almost always means "cross here": aim Aaron at
+  // the nearest stepping stone instead of the unwalkable water beside it.
+  adjustTarget(point){
+    if(!this.waterPolygon||!Phaser.Geom.Polygon.Contains(this.waterPolygon,point.x,point.y))return point;
+    let best=null,bestD=Infinity;
+    for(const [sx,sy] of this.steppingStones){const d=Phaser.Math.Distance.Between(point.x,point.y,sx,sy);if(d<bestD){bestD=d;best={x:sx,y:sy};}}
+    return bestD<110?best:point;
   }
   drawMap(){
     const ground=this.add.graphics().setDepth(-20);
@@ -62,17 +73,17 @@ export class MeetNoahScene extends ExploreScene {
   }
   buildPeopleAndProps(){
     character(this,'noah',0x688687,0xd2d1bc,true);
-    this.noah=this.add.image(990,570,'noah-down-0').setOrigin(.5,.85).setScale(.9).setDepth(571);
+    this.noah=this.add.image(990,570,'noah-down-0').setOrigin(.5,.85).setScale(1.1).setDepth(571);
     if(!this.app.save.settings.reducedMotion)this.tweens.add({targets:this.noah,y:567,duration:950,yoyo:true,repeat:-1,ease:'Sine.inOut'});
     label(this,990,595,'NOAH','#fff0cc',13).setDepth(572);
-    const sheep=this.add.container(520,710).setDepth(711);const body=this.add.ellipse(0,0,33,23,0xf1e7ce);sheep.add(body);sheep.add(this.add.circle(-14,2,4,0x4a4438));sheep.add(this.add.circle(14,2,4,0x4a4438));sheep.add(this.add.triangle(17,-7,0,9,8,0,0,0,0x4a4438));
-    const bird=this.add.container(1150,565).setDepth(566);bird.add(this.add.ellipse(0,0,25,16,0xd8d0b4));bird.add(this.add.circle(10,-4,7,0xd8d0b4));bird.add(this.add.triangle(18,-4,0,3,9,0,0,-3,0xc88e56));
+    const sheep=this.add.container(520,710).setDepth(711).setScale(1.3);const body=this.add.ellipse(0,0,33,23,0xf1e7ce);sheep.add(body);sheep.add(this.add.circle(-14,2,4,0x4a4438));sheep.add(this.add.circle(14,2,4,0x4a4438));sheep.add(this.add.triangle(17,-7,0,9,8,0,0,0,0x4a4438));
+    const bird=this.add.container(1150,565).setDepth(566).setScale(1.3);bird.add(this.add.ellipse(0,0,25,16,0xd8d0b4));bird.add(this.add.circle(10,-4,7,0xd8d0b4));bird.add(this.add.triangle(18,-4,0,3,9,0,0,-3,0xc88e56));
     if(!this.app.save.settings.reducedMotion){this.tweens.add({targets:sheep,x:560,y:725,duration:5600,yoyo:true,repeat:-1,ease:'Sine.inOut'});this.tweens.add({targets:bird,x:1180,y:555,duration:3100,yoyo:true,repeat:-1,ease:'Sine.inOut'});}
     this.drawMaterials();
     const savedFlags=this.flags();
     for(const item of this.materialSpots())if(savedFlags[item.key])this.materialArt[item.key].setAlpha(.34);
     label(this,1260,640,'STREAM','#d5ead0',10).setDepth(800);
-    const plan=this.add.container(1110,245).setDepth(246);
+    const plan=this.add.container(1110,245).setDepth(246).setScale(1.3);
     plan.add(this.add.ellipse(0,14,45,12,0x344a39,.28));plan.add(this.add.rectangle(0,0,32,24,0xe8d6a7).setAngle(-9).setStrokeStyle(2,0x8d7450));
     plan.add(this.add.rectangle(0,0,17,3,0x8b7652).setAngle(-9));plan.add(this.add.rectangle(0,6,14,2,0x8b7652).setAngle(-9));
     if(!this.app.save.settings.reducedMotion)this.tweens.add({targets:plan,y:240,duration:850,yoyo:true,repeat:-1,ease:'Sine.inOut'});
@@ -102,7 +113,7 @@ export class MeetNoahScene extends ExploreScene {
     this.input.on('pointerup',()=>{
       if(!this.draggingLog)return;
       this.draggingLog=false;
-      if(!this.logMoved&&(Math.abs(this.log.y-this.dragStart.y)>64||Math.abs(this.log.x-this.dragStart.x)>64)){this.logMoved=true;this.flags().log_moved=true;this.log.setDepth(this.log.y);this.hiddenWood.setVisible(true);this.hiddenSpark.setVisible(true);this.hotspots=this.hotspots.filter(h=>h.name!=='Drag the fallen log aside');const hidden=this.materialSpots().find(item=>item.key==='wood_3');if(!this.flags()[hidden.key])this.hotspot(hidden.x,hidden.y,hidden.name,()=>this.collect(hidden),58);this.app.persist();this.showFeedback('You shifted the fallen log. A supply was tucked behind it!');this.burst(this.hiddenWood.x,this.hiddenWood.y);}
+      if(!this.logMoved&&(Math.abs(this.log.y-this.dragStart.y)>64||Math.abs(this.log.x-this.dragStart.x)>64)){this.logMoved=true;this.flags().log_moved=true;this.log.setDepth(this.log.y);this.hiddenWood.setVisible(true);this.hiddenSpark.setVisible(true);this.hotspots=this.hotspots.filter(h=>h.name!=='Drag the fallen log aside');const hidden=this.materialSpots().find(item=>item.key==='wood_3');if(!this.flags()[hidden.key])this.hotspot(hidden.x,hidden.y,hidden.name,()=>this.collect(hidden),68);this.app.persist();this.showFeedback('You shifted the fallen log. A supply was tucked behind it!');this.burst(this.hiddenWood.x,this.hiddenWood.y);}
     });
     this.hiddenWood=this.materialArt.wood_3;
     this.hiddenSpark=this.add.text(x,y-30,'✦',{fontSize:'18px',color:'#fff0ad'}).setOrigin(.5).setDepth(y+5).setVisible(false);
@@ -110,17 +121,17 @@ export class MeetNoahScene extends ExploreScene {
     if(this.flags().log_moved){this.logMoved=true;this.log.setY(y-82);this.logWall.setTo(this.log.x-50,this.log.y-16,100,32);this.hiddenWood.setVisible(true);this.hiddenSpark.setVisible(true);}
   }
   drawMaterials(){
-    const wood1=this.woodPile(590,730),wood2=this.woodPile(905,645),wood3=this.add.container(900,865).setDepth(867).setVisible(false);
+    const wood1=this.woodPile(590,730),wood2=this.woodPile(905,645),wood3=this.add.container(900,865).setDepth(867).setScale(1.3).setVisible(false);
     wood3.add(this.add.ellipse(0,10,45,12,0x334a35,.25));wood3.add(this.add.rectangle(-7,0,36,11,0x9b7048).setAngle(14));wood3.add(this.add.rectangle(12,-8,28,10,0xb68a59).setAngle(-13));
 
     const rope1=this.ropeCoil(1120,660),rope2=this.ropeCoil(1370,790);
 
-    const jar=this.add.container(1070,875).setDepth(876);
+    const jar=this.add.container(1070,875).setDepth(876).setScale(1.3);
     jar.add(this.add.ellipse(0,15,36,10,0x334a35,.3));
     jar.add(this.add.rectangle(0,0,23,29,0x9d7250).setStrokeStyle(2,0x654b37));
     jar.add(this.add.rectangle(0,-17,11,7,0x72533b));jar.add(this.add.rectangle(0,-13,18,3,0xd0ad69));
     jar.add(this.add.rectangle(0,1,13,12,0xc29a61));
-    const hammer=this.add.container(680,890).setDepth(891);
+    const hammer=this.add.container(680,890).setDepth(891).setScale(1.3);
     hammer.add(this.add.ellipse(0,12,36,10,0x334a35,.3));hammer.add(this.add.rectangle(0,1,5,27,0x986f47).setAngle(-20));
     hammer.add(this.add.rectangle(2,-11,22,8,0x777767).setAngle(-20));hammer.add(this.add.rectangle(-7,-11,8,13,0x777767).setAngle(-20));
     // A warm pulse and small glint make each quest prop legible against the grass.
@@ -130,8 +141,8 @@ export class MeetNoahScene extends ExploreScene {
     }
     this.materialArt={wood_1:wood1,wood_2:wood2,wood_3:wood3,rope_1:rope1,rope_2:rope2,tool_1:hammer,pitch:jar};
   }
-  woodPile(x,y){const pile=this.add.container(x,y).setDepth(y);pile.add(this.add.ellipse(0,11,52,12,0x334a35,.28));for(let i=0;i<3;i++){pile.add(this.add.rectangle((i-1)*8,(i%2)*6,42,10,i%2?0x9b7048:0xb08454).setAngle(i*11-10));}return pile;}
-  ropeCoil(x,y){const rope=this.add.container(x,y).setDepth(y);rope.add(this.add.ellipse(0,11,39,10,0x334a35,.28));const coil=this.add.graphics();coil.lineStyle(4,0xc79a59,1).strokeCircle(-3,0,12).strokeCircle(3,0,8).strokeCircle(0,0,4);rope.add(coil);rope.add(this.add.arc(12,3,10,20,230,false,0xc79a59).setStrokeStyle(3,0xc79a59));return rope;}
+  woodPile(x,y){const pile=this.add.container(x,y).setDepth(y).setScale(1.3);pile.add(this.add.ellipse(0,11,52,12,0x334a35,.28));for(let i=0;i<3;i++){pile.add(this.add.rectangle((i-1)*8,(i%2)*6,42,10,i%2?0x9b7048:0xb08454).setAngle(i*11-10));}return pile;}
+  ropeCoil(x,y){const rope=this.add.container(x,y).setDepth(y).setScale(1.3);rope.add(this.add.ellipse(0,11,39,10,0x334a35,.28));const coil=this.add.graphics();coil.lineStyle(4,0xc79a59,1).strokeCircle(-3,0,12).strokeCircle(3,0,8).strokeCircle(0,0,4);rope.add(coil);rope.add(this.add.arc(12,3,10,20,230,false,0xc79a59).setStrokeStyle(3,0xc79a59));return rope;}
   materialSpots(){return [
     {key:'wood_1',item:'wood',x:590,y:730,name:'Gather wood by the path'},
     {key:'wood_2',item:'wood',x:905,y:645,name:'Search the forest clearing'},
