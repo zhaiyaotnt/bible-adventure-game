@@ -27,6 +27,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
     this.stage=f.blueprint_complete?0:(f.ark_decks_done?3:(f.ark_ribs_done||f.blueprint_stage_one)?2:1);
     this.visualStage=f.blueprint_complete?3:this.stage;
     this.selected=null;this.dragging=null;this.raining=false;
+    this.input.on('pointerdown',p=>this.pickAt(p));
     this.input.on('pointermove',p=>this.pointerMove(p));
     this.input.on('pointerup',p=>this.pointerUp(p));
     this.input.keyboard.on('keydown-R',()=>this.rotateSelected());
@@ -90,7 +91,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
   X(x){return this.CX+x*this.S;}
   Y(y){return this.BASE+y*this.S;}
   drawStage(){
-    this.board.removeAll(true);this.pieces=[];this.slots=[];this.rainButton=null;
+    this.board.removeAll(true);this.pieces=[];this.slots=[];this.rainButton=null;this.rotateBtn=null;
     this.addTopButton();
     this.drawArkBase();
     if(this.stage===1)this.drawRibStage();
@@ -99,13 +100,16 @@ export class ArkBlueprintScene extends Phaser.Scene {
   }
   addTopButton(){
     // Portrait: pin to the top-left corner — centred, it overlaps the title.
-    const b=this.add.text(this.phonePortrait?14:876,this.phonePortrait?14:64,'← Meadow',{fontFamily:'Arial',fontSize:'15px',color:ink,backgroundColor:'#e2d1a7',padding:{x:13,y:10}}).setOrigin(this.phonePortrait?0:1,0).setInteractive({useHandCursor:true});
+    const b=this.add.text(this.phonePortrait?14:876,this.phonePortrait?14:64,'← Meadow',{fontFamily:'Arial',fontSize:this.phonePortrait?'19px':'15px',color:ink,backgroundColor:'#e2d1a7',padding:{x:13,y:10}}).setOrigin(this.phonePortrait?0:1,0).setInteractive({useHandCursor:true});
     b.on('pointerdown',()=>this.leave());
     this.board.add(b);
   }
   stageTitle(title,sub){
-    this.board.add(this.add.text(480,this.phonePortrait?64:96,title,{fontFamily:'Georgia',fontSize:this.phonePortrait?'18px':'24px',fontStyle:'bold',color:ink,align:'center',wordWrap:{width:this.phonePortrait?330:820}}).setOrigin(.5));
-    this.board.add(this.add.text(480,this.phonePortrait?94:130,sub,{fontFamily:'Georgia',fontSize:this.phonePortrait?'13px':'16px',color:'#42503f',align:'center',wordWrap:{width:this.phonePortrait?330:760}}).setOrigin(.5));
+    // Portrait now frames the whole stage at fit zoom (~0.31), which
+    // shrinks canvas text to a few pixels — so portrait fonts are much
+    // larger than they were in the old cropped view.
+    this.board.add(this.add.text(480,this.phonePortrait?74:96,title,{fontFamily:'Georgia',fontSize:this.phonePortrait?'31px':'24px',fontStyle:'bold',color:ink,align:'center',wordWrap:{width:this.phonePortrait?620:820}}).setOrigin(.5));
+    this.board.add(this.add.text(480,this.phonePortrait?126:130,sub,{fontFamily:'Georgia',fontSize:this.phonePortrait?'22px':'16px',color:'#42503f',align:'center',wordWrap:{width:this.phonePortrait?600:760}}).setOrigin(.5));
   }
   // The ark side view grows with progress: bare ribs first, planked lower
   // hull next, then the full hull with its roof house for sealing.
@@ -152,7 +156,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
     guide.strokeRect(this.X(-300),this.Y(-16),600*S,20*S);
     for(const rx of [-180,180]){guide.beginPath();guide.arc(this.X(rx),this.Y(-8),92*S,Math.PI,2*Math.PI);guide.strokePath();}
     this.ribTargets={keel:{x:this.X(0),y:this.Y(-6),rotation:0},'rib-a':{x:this.X(-180),y:this.Y(-8),rotation:0},'rib-b':{x:this.X(180),y:this.Y(-8),rotation:0}};
-    const starts=this.phonePortrait?[[330,545],[480,560],[630,545]]:[[215,545],[480,560],[745,545]];
+    const starts=this.phonePortrait?[[330,518],[480,533],[630,518]]:[[215,545],[480,560],[745,545]];
     const rows=[['keel','beam_keel_placed'],['rib-a','beam_a_placed'],['rib-b','beam_b_placed']];
     rows.forEach(([id,flag],i)=>{
       const placed=!!f[flag],target=this.ribTargets[id];
@@ -165,9 +169,9 @@ export class ArkBlueprintScene extends Phaser.Scene {
     // Action buttons live under the title, not at the canvas bottom:
     // on wide desktop windows the canvas is centre-cropped vertically,
     // and bottom-edge buttons can fall outside the visible area.
-    const rotate=this.add.text(480,this.phonePortrait?132:172,'↻  Rotate selected rib   ·   R',{fontFamily:'Arial',fontSize:'15px',color:'#fff2cf',backgroundColor:'#35594c',padding:{x:16,y:10}}).setOrigin(.5).setInteractive({useHandCursor:true});
+    const rotate=this.add.text(480,this.phonePortrait?182:172,'↻  Rotate selected rib   ·   R',{fontFamily:'Arial',fontSize:this.phonePortrait?'20px':'15px',color:'#fff2cf',backgroundColor:'#35594c',padding:{x:16,y:10}}).setOrigin(.5).setInteractive({useHandCursor:true});
     rotate.on('pointerdown',()=>this.rotateSelected());
-    this.board.add(rotate);
+    this.board.add(rotate);this.rotateBtn=rotate;
   }
   // ---- Stage 2: support posts, then decks ----
   drawDeckStage(){
@@ -180,7 +184,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
     for(const key of ['lower','middle','upper']){const d=this.deckLevels[key];guide.strokeRect(this.X(-d.w/2),this.Y(d.y-13),d.w*S,26*S);}
     guide.strokeRect(this.X(-11),this.Y(-92),22*S,58*S);
     guide.strokeRect(this.X(-11),this.Y(-150),22*S,58*S);
-    const starts=this.phonePortrait?[[350,548],[430,548],[510,548],[590,548],[660,548]]:[[150,548],[265,548],[420,548],[600,548],[790,548]];
+    const starts=this.phonePortrait?[[350,520],[430,520],[510,520],[590,520],[660,520]]:[[150,548],[265,548],[420,548],[600,548],[790,548]];
     const mk=(id,x,y,w,h,kind,label,flag)=>{
       const placed=!!f[flag];
       const px=placed?(kind==='pillar'?this.X(0):this.X(0)):x, py=placed?(kind==='pillar'?this.Y(id==='pillar-mid'?-63:-121):this.Y(this.deckLevels[id.replace('deck-','')].y)):y;
@@ -212,7 +216,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
     if(!f.window_placed)guide.strokeRect(this.X(-30),this.Y(-238),60*S,34*S);
     if(f.door_placed)this.drawFittedDoor();
     if(f.window_placed)this.drawFittedWindow();
-    const starts=this.phonePortrait?[[330,540],[480,540],[630,540],[395,592],[565,592]]:[[140,540],[330,540],[520,540],[700,540],[830,540]];
+    const starts=this.phonePortrait?[[330,514],[480,514],[630,514],[395,566],[565,566]]:[[140,540],[330,540],[520,540],[700,540],[830,540]];
     const items=[
       ['seam-1','strip','seam_1_placed',560*S,15*S,'PITCH'],
       ['seam-2','strip','seam_2_placed',560*S,15*S,'PITCH'],
@@ -242,7 +246,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
   }
   showRainButton(){
     if(this.rainButton)return;
-    const btn=this.add.text(480,this.phonePortrait?132:174,'🌧  Test it with rain',{fontFamily:'Arial',fontSize:'17px',fontStyle:'bold',color:'#fff2cf',backgroundColor:'#2e5d8a',padding:{x:20,y:12}}).setOrigin(.5).setInteractive({useHandCursor:true});
+    const btn=this.add.text(480,this.phonePortrait?182:174,'🌧  Test it with rain',{fontFamily:'Arial',fontSize:this.phonePortrait?'21px':'17px',fontStyle:'bold',color:'#fff2cf',backgroundColor:'#2e5d8a',padding:{x:20,y:12}}).setOrigin(.5).setInteractive({useHandCursor:true});
     btn.on('pointerdown',()=>this.rainTest());
     this.board.add(btn);this.rainButton=btn;
   }
@@ -268,13 +272,13 @@ export class ArkBlueprintScene extends Phaser.Scene {
     if(kind==='plank'){
       c.add(this.add.rectangle(0,0,w,h,wood).setStrokeStyle(3,0x704d36));
       c.add(this.add.rectangle(0,-h/2+5,w-12,3,0xe4bb7e,.8));
-      if(label)c.add(this.add.text(0,0,label,{fontFamily:'Arial',fontSize:'11px',fontStyle:'bold',color:'#513e2f'}).setOrigin(.5));
+      if(label)c.add(this.add.text(0,0,label,{fontFamily:'Arial',fontSize:'13px',fontStyle:'bold',color:'#513e2f'}).setOrigin(.5));
     } else if(kind==='rib'){
       const g=this.add.graphics();g.lineStyle(Math.max(6,10*this.S),darkWood);
       g.beginPath();g.arc(0,h/2-6,w/2,Math.PI,2*Math.PI);g.strokePath();
       g.lineStyle(3,0xe4bb7e);g.beginPath();g.arc(0,h/2-6,w/2-8,Math.PI,2*Math.PI);g.strokePath();
       c.add(g);
-      if(label)c.add(this.add.text(0,h/2+8,label,{fontFamily:'Arial',fontSize:'10px',fontStyle:'bold',color:'#513e2f'}).setOrigin(.5));
+      if(label)c.add(this.add.text(0,h/2+8,label,{fontFamily:'Arial',fontSize:'12px',fontStyle:'bold',color:'#513e2f'}).setOrigin(.5));
     } else if(kind==='pillar'){
       c.add(this.add.rectangle(0,0,w,h,darkWood).setStrokeStyle(2,0x5d3d22));
       c.add(this.add.rectangle(0,-h/2+6,w+10,7,wood));
@@ -290,8 +294,8 @@ export class ArkBlueprintScene extends Phaser.Scene {
       c.add(this.add.rectangle(0,0,w,h,0xf3e3b3).setStrokeStyle(3,0x6e4c2e));
       const g=this.add.graphics();g.lineStyle(2,0x6e4c2e);g.lineBetween(0,-h/2,0,h/2);g.lineBetween(-w/2,0,w/2,0);c.add(g);
     }
-    c.setSize(w,h).setInteractive(new Phaser.Geom.Rectangle(-w/2,-h/2,w,h),Phaser.Geom.Rectangle.Contains);
-    c.id=id;c.kind=kind;c.placed=false;c.setDepth(20);
+    c.setSize(w,h).setInteractive(new Phaser.Geom.Rectangle(-w/2-14,-h/2-14,w+28,h+28),Phaser.Geom.Rectangle.Contains);
+    c.id=id;c.kind=kind;c.placed=false;c.setDepth(20);c.grabW=w;c.grabH=h;
     // A rib's visual centre is its arc centre, offset below the container origin.
     if(kind==='rib')c.arcOffsetY=h/2-6;
     // Selection ring: a gold outline shown while the piece is selected, so
@@ -312,6 +316,29 @@ export class ArkBlueprintScene extends Phaser.Scene {
     if(this.selected&&this.selected!==piece)this.selected.getByName('selring')?.setVisible(false);
     this.selected=piece;
     piece?.getByName('selring')?.setVisible(true);
+    // Light up the rotate button while a rib is selected, so the next
+    // step is obvious.
+    if(this.rotateBtn)this.rotateBtn.setBackgroundColor(piece&&piece.kind==='rib'?'#a37c14':'#35594c');
+  }
+  // Primary piece picking: plain distance from the tap to each piece's
+  // visual centre, on the scene-level pointer events. Game-object input
+  // on container pieces proved unreliable on touch devices (ribs could
+  // not be selected at all), while scene-level pointer input is the same
+  // path that reliably drives walking in the explore scenes.
+  pickAt(pointer){
+    if(this.app.isBlocked()||this.raining)return;
+    for(const btn of [this.rotateBtn,this.rainButton])if(btn&&btn.getBounds().contains(pointer.worldX,pointer.worldY))return;
+    for(const piece of [...this.pieces].reverse()){
+      if(piece.placed)continue;
+      const off=piece.arcOffsetY||0,cos=Math.cos(piece.rotation),sin=Math.sin(piece.rotation);
+      const cx=piece.x-off*sin,cy=piece.y+off*cos;
+      const r=Math.max(piece.grabW||0,piece.grabH||0)*.62+18;
+      if(Phaser.Math.Distance.Between(pointer.worldX,pointer.worldY,cx,cy)<=r){
+        this.selectPiece(piece);
+        this.dragging=piece;this.dragOffset={x:piece.x-pointer.worldX,y:piece.y-pointer.worldY};piece.setDepth(40);
+        return;
+      }
+    }
   }
   pointerMove(pointer){if(this.dragging&&pointer.isDown)this.dragging.setPosition(pointer.worldX+this.dragOffset.x,pointer.worldY+this.dragOffset.y);}
   pointerUp(){
@@ -324,7 +351,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
   rotateSelected(){
     if(this.stage!==1)return;
     const piece=this.selected;
-    if(!piece||piece.placed||piece.kind!=='rib'){this.ping(480,this.phonePortrait?190:230,'Tap a rib first, then turn it upright.');return;}
+    if(!piece||piece.placed||piece.kind!=='rib'){this.ping(480,this.phonePortrait?242:230,'Tap a rib first, then turn it upright.');return;}
     piece.rotation=Phaser.Math.Angle.Wrap(piece.rotation+Math.PI/2);
     const flags=this.flags();
     if(piece.id==='rib-a')flags.beam_a_rotated=Math.abs(piece.rotation)<.1;
@@ -351,7 +378,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
         this.time.delayedCall(750,()=>{this.stage=2;this.visualStage=2;this.drawStage();this.updateHUD();});
       }
     } else {
-      const starts=this.phonePortrait?[[330,545],[480,560],[630,545]]:[[215,545],[480,560],[745,545]];
+      const starts=this.phonePortrait?[[330,518],[480,533],[630,518]]:[[215,545],[480,560],[745,545]];
       piece.setPosition(...starts[['keel','rib-a','rib-b'].indexOf(piece.id)]);
       this.ping(piece.x,piece.y-56,piece.kind==='rib'&&angleOff>=.3?'Turn the rib upright first (↻).':'Look for the outline that fits.');
     }
