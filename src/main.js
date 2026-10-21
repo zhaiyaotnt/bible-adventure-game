@@ -73,5 +73,8 @@ document.addEventListener('keydown',e=>{
   else if(app.modal&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();app.dismiss();}
   else if(app.modal&&e.key==='Tab'){const elements=[...$('modal-root').querySelectorAll('button,input')].filter(x=>!x.disabled);const first=elements[0],last=elements.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}
 },true);
+// The top HUD banner can be pushed out of the way: it slides up and a
+// small tab remains to pull it back down.
+(()=>{const play=document.getElementById('play'),hud=document.getElementById('hud');if(!play||!hud)return;const tab=document.createElement('button');tab.type='button';tab.id='hud-toggle';tab.textContent='⌃';tab.setAttribute('aria-label','Hide or show the top banner');tab.addEventListener('click',()=>{const hidden=hud.classList.toggle('hud-hidden');tab.textContent=hidden?'⌄':'⌃';});play.appendChild(tab);})();
 window.addEventListener('blur',()=>{if(app.saved)app.persist();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&app.saved)app.persist();});setInterval(()=>{if(app.saved)app.persist();},30000);
 new Phaser.Game({type:Phaser.AUTO,parent:'game',width:960,height:640,backgroundColor:'#203a37',pixelArt:false,roundPixels:false,resolution:Math.min(window.devicePixelRatio||1,2),scale:{mode:Phaser.Scale.ENVELOP,autoCenter:Phaser.Scale.CENTER_BOTH},input:{keyboard:{capture:[32,37,38,39,40]}},scene:[BootScene,HomeBaseScene,MeetNoahScene,ArkBlueprintScene,ArkInteriorScene],render:{antialias:true}});

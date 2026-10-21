@@ -63,3 +63,8 @@ canvas{image-rendering:auto;touch-action:none}
 .bp-finalbox strong{font:600 13px system-ui,sans-serif;letter-spacing:1px;color:var(--gold)}
 .bp-finalbox p{font:14px/1.6 system-ui,sans-serif;margin:8px 0}
 @media(max-width:760px){.bp-layout{grid-template-columns:1fr}.bp-cell{min-height:74px}.bp-clues{max-height:220px}.ark-blueprint-open{bottom:calc(170px + env(safe-area-inset-bottom));padding:11px 14px;font-size:13px}}
+
+/* Collapsible top HUD banner */
+#hud{transition:transform .25s ease,opacity .25s ease}
+#hud.hud-hidden{transform:translateY(-135%);opacity:0;pointer-events:none}
+#hud-toggle{position:absolute;top:10px;right:10px;z-index:12;width:34px;height:34px;border-radius:50%;background:#1c342fcc;border:1px solid #92a479;color:#fff0bf;font-size:16px;line-height:1}

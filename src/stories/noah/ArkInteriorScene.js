@@ -17,17 +17,30 @@ export class ArkInteriorScene extends ExploreScene {
   create() {
     const app = this.game.registry.get('app');
     this.app = app;
-    // Interior shell: timber walls, a plank floor, heavy beams.
-    rect(this, 0, 0, 960, 640, 0x4a3826);
-    rect(this, 0, 0, 960, 300, 0x5d4630);
-    for (let x = 24; x < 960; x += 118) rect(this, x, 0, 7, 300, 0x4a3826);
-    rect(this, 0, 288, 960, 14, 0x3a2b1c);
-    rect(this, 0, 302, 960, 338, 0x77572f);
-    for (let y = 338; y < 640; y += 34) rect(this, 0, y, 960, 3, 0x654a28);
+    // Interior shell: timber walls, a plank floor, heavy beams. The shell
+    // is drawn well past the room's edges because the camera (below) now
+    // frames a closer view that can pan beyond the 960x640 room.
+    rect(this, -700, -400, 2360, 1440, 0x4a3826);
+    rect(this, -700, -400, 2360, 700, 0x5d4630);
+    for (let x = -676; x < 1660; x += 118) rect(this, x, -400, 7, 700, 0x4a3826);
+    rect(this, -700, 288, 2360, 14, 0x3a2b1c);
+    rect(this, -700, 302, 2360, 738, 0x77572f);
+    for (let y = 338; y < 1040; y += 34) rect(this, -700, y, 2360, 3, 0x654a28);
     for (const bx of [150, 480, 810]) { rect(this, bx, 288, 16, 240, 0x543d24); rect(this, bx - 8, 288, 32, 14, 0x3a2b1c); }
-    label(this, 480, 60, this.deck === 'upper' ? '· UPPER DECK ·' : this.deck === 'middle' ? '· MIDDLE DECK ·' : '· LOWER DECK ·', '#e8cf9f', 17);
+    label(this, 480, 60, this.deck === 'upper' ? '· UPPER DECK ·' : this.deck === 'middle' ? '· MIDDLE DECK ·' : '· LOWER DECK ·', '#e8cf9f', 22);
     this.setup(app, { x: this.spawnX ?? 480, y: 486 });
     this.bounds = { left: 62, right: 898, top: 408, bottom: 566 };
+    // Closer default framing than the whole-room fit view: at fit zoom
+    // the interior art and its labels shrank to a blur on phones. Use the
+    // meadow's proven base zoom and follow Aaron; pinch can still pull
+    // back out to the full-room fit level.
+    this.cameraManagedByScene = true;
+    this.baseZoom = window.innerHeight > window.innerWidth ? 0.62 : 1.0;
+    this.minZoom = this.computeFitZoom();
+    this.userZoom = 1; this.applyZoom();
+    const cam = this.cameras.main;
+    cam.setBounds(-460, -340, 960 + 920, 640 + 680);
+    cam.startFollow(this.player, true, .12, .12);
     this.blueprintButton();
     if (this.deck === 'upper') this.drawUpper();
     else if (this.deck === 'lower') this.drawLower();
@@ -97,24 +110,24 @@ export class ArkInteriorScene extends ExploreScene {
   drawMiddle() {
     // Planning table with the unfinished blueprint.
     rect(this, 196, 330, 250, 20, 0x9a7648); rect(this, 206, 350, 14, 62, 0x6e5136); rect(this, 416, 350, 14, 62, 0x6e5136);
-    rect(this, 226, 318, 190, 15, 0xe9dcbc); label(this, 321, 326, 'THE PLAN', '#7a6749', 12);
+    rect(this, 226, 318, 190, 15, 0xe9dcbc); label(this, 321, 326, 'THE PLAN', '#7a6749', 13);
     sparkle(this, 321, 300);
     this.hotspot(321, 420, 'Open the ark blueprint', () => this.openBlueprint(), 105);
     // Carpenter's workbench + notebook + tool wall.
     rect(this, 596, 336, 220, 16, 0x8a6238); rect(this, 606, 352, 12, 58, 0x5f422a); rect(this, 794, 352, 12, 58, 0x5f422a);
-    rect(this, 640, 322, 52, 13, 0xd9cba6); label(this, 706, 372, 'WORKBENCH', '#e8cf9f', 11);
+    rect(this, 640, 322, 52, 13, 0xd9cba6); label(this, 706, 372, 'WORKBENCH', '#e8cf9f', 13);
     this.hotspot(666, 420, 'Read the carpenter’s notebook', () => this.grantClue(7), 92);
-    rect(this, 836, 318, 64, 74, 0x54381f); label(this, 868, 300, 'TOOLS', '#e8cf9f', 11);
+    rect(this, 836, 318, 64, 74, 0x54381f); label(this, 868, 300, 'TOOLS', '#e8cf9f', 13);
     this.hotspot(868, 420, 'Study the tool wall chart', () => this.grantClue(8), 84);
     // Feed chart and sacks, left side.
-    rect(this, 66, 318, 92, 66, 0xd9cba6); label(this, 112, 300, 'FEEDING', '#e8cf9f', 11);
+    rect(this, 66, 318, 92, 66, 0xd9cba6); label(this, 112, 300, 'FEEDING', '#e8cf9f', 13);
     this.hotspot(112, 420, 'Read the feed chart', () => this.grantClue(4), 86);
     rect(this, 66, 442, 54, 42, 0xa8905c); rect(this, 128, 450, 46, 34, 0x967c4e);
     this.hotspot(120, 500, 'Check the feed sack tag', () => this.grantClue(10), 84);
     // Noah.
     character(this, 'noah', 0xd9c8a9, 0x658580);
     const noah = this.add.image(500, 478, 'noah-down-0').setOrigin(.5, .85).setDepth(478).setScale(1.05);
-    label(this, 500, 394, 'NOAH', '#f9e7ba', 13);
+    label(this, 500, 394, 'NOAH', '#f9e7ba', 15);
     this.hotspot(500, 462, 'Talk to Noah', () => this.talkNoah(), 92);
     // Door back to the meadow + stairs.
     rect(this, 30, 330, 52, 150, 0x3a2b1c); rect(this, 38, 338, 36, 100, 0x7c5a34);
@@ -140,25 +153,25 @@ export class ArkInteriorScene extends ExploreScene {
     const light = this.add.graphics(); light.fillStyle(0xfff3b0, .16); light.fillPoints([{ x: 430, y: 0 }, { x: 560, y: 0 }, { x: 660, y: 430 }, { x: 330, y: 430 }], true); light.setDepth(1);
     rect(this, 452, 6, 96, 16, 0x2e2119);
     // Deck diagram on a post.
-    rect(this, 250, 312, 110, 84, 0xe9dcbc); label(this, 305, 296, 'DIAGRAM', '#e8cf9f', 11);
+    rect(this, 250, 312, 110, 84, 0xe9dcbc); label(this, 305, 296, 'DIAGRAM', '#e8cf9f', 13);
     for (let r = 0; r < 3; r++) for (let cI = 0; cI < 3; cI++) rect(this, 262 + cI * 30, 324 + r * 22, 24, 16, 0xcbb27f);
     sparkle(this, 305, 288);
     this.hotspot(305, 420, 'Study the deck diagram', () => this.grantClue(1), 92);
     // Family bunks in the corner.
     rect(this, 690, 356, 180, 44, 0x7c5a34); rect(this, 690, 336, 180, 20, 0xd9cba6); rect(this, 700, 342, 44, 12, 0xf0dfb6);
-    label(this, 780, 318, 'FAMILY BUNKS', '#e8cf9f', 11);
+    label(this, 780, 318, 'FAMILY BUNKS', '#e8cf9f', 13);
     this.hotspot(780, 430, 'Read the note carved by the bunks', () => this.grantClue(5), 95);
     // Water barrels.
     for (const bx of [520, 566]) { rect(this, bx, 366, 40, 52, 0x7a5c36); rect(this, bx, 380, 40, 6, 0x543d24); rect(this, bx, 402, 40, 6, 0x543d24); }
-    label(this, 563, 348, 'WATER', '#e8cf9f', 11);
+    label(this, 563, 348, 'WATER', '#e8cf9f', 13);
     this.hotspot(563, 440, 'Read the stencil on the barrels', () => this.grantClue(6), 90);
     // Empty bird cages (flavour).
     for (const cx of [120, 168]) { rect(this, cx, 356, 42, 56, 0x000000); rect(this, cx, 356, 42, 56, 0x9a7648); for (let b = 0; b < 4; b++) rect(this, cx + 6 + b * 10, 356, 3, 56, 0x6e5136); }
-    label(this, 165, 338, 'BIRD CAGES', '#e8cf9f', 11);
+    label(this, 165, 338, 'BIRD CAGES', '#e8cf9f', 13);
     this.hotspot(165, 440, 'Look at the empty bird cages', () => this.app.dialogue('Empty cages', ['The cages are built and waiting, sized for birds of every kind. Where the birds will live in the ark is part of the mystery — their room needs light and air.'], { fiction: true, reference: 'Genesis 6:20' }), 86);
     // Torn paper, first half.
     if (!this.flags().mx_torn_a) {
-      rect(this, 392, 512, 34, 22, 0xe9dcbc); label(this, 409, 500, 'TORN PAPER', '#e8cf9f', 10);
+      rect(this, 392, 512, 34, 22, 0xe9dcbc); label(this, 409, 500, 'TORN PAPER', '#e8cf9f', 12);
       this.hotspot(409, 516, 'Pick up the torn paper', () => this.grantTorn('a'), 72);
     }
     this.stairs(872, 'down', 'middle', 796);
@@ -168,12 +181,12 @@ export class ArkInteriorScene extends ExploreScene {
     // Animal pens (flavour) on the left.
     for (let p = 0; p < 5; p++) rect(this, 84 + p * 26, 360, 8, 108, 0x8a6238);
     rect(this, 76, 372, 140, 9, 0x6e5136); rect(this, 76, 428, 140, 9, 0x6e5136);
-    label(this, 146, 342, 'ANIMAL PENS', '#e8cf9f', 11);
+    label(this, 146, 342, 'ANIMAL PENS', '#e8cf9f', 13);
     this.hotspot(146, 470, 'Look at the animal pens', () => this.app.dialogue('The pens', ['The pens are heavy-built, with deep hoof scratches already in the timber from practice runs. Whatever lives down here will be big — and its weight belongs low in the ark.'], { fiction: true, reference: 'Genesis 6:20' }), 92);
     // Crates hiding a note and the second torn half.
     const f = this.flags();
     this.noteSpot = this.add.container(430, 496); this.noteSpot.add(rect(this, -24, -14, 48, 28, 0xe9dcbc)); this.noteSpot.setVisible(!!f.mx_crates);
-    if (!f.mx_crates) label(this, 430, 462, 'CRATES', '#e8cf9f', 11);
+    if (!f.mx_crates) label(this, 430, 462, 'CRATES', '#e8cf9f', 13);
     this.crates = [];
     const cratePos = f.mx_crates ? [[300, 540], [560, 540]] : [[398, 486], [466, 492]];
     cratePos.forEach(([cx, cy], i) => {
@@ -195,7 +208,7 @@ export class ArkInteriorScene extends ExploreScene {
       });
     } else this.registerNoteHotspots();
     // Half-finished storage label.
-    rect(this, 640, 330, 130, 56, 0xd9cba6); label(this, 705, 312, 'STORAGE LABEL', '#e8cf9f', 11);
+    rect(this, 640, 330, 130, 56, 0xd9cba6); label(this, 705, 312, 'STORAGE LABEL', '#e8cf9f', 13);
     this.hotspot(705, 420, 'Read the unfinished storage label', () => this.grantClue(9), 92);
     // Water barrels (flavour) far right.
     for (const bx of [806, 850]) rect(this, bx, 380, 38, 48, 0x7a5c36);
