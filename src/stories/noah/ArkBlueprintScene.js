@@ -122,7 +122,10 @@ export class ArkBlueprintScene extends Phaser.Scene {
         : this.makePiece(id,placed?target.x:starts[i][0],placed?target.y:starts[i][1],184*S,100*S,'rib',placed?0:rotation,'RIB');
       if(placed){piece.placed=true;piece.disableInteractive();if(piece.arcOffsetY)piece.setPosition(target.x,target.y-piece.arcOffsetY);}
     });
-    const rotate=this.add.text(480,606,'↻  Rotate selected rib   ·   R',{fontFamily:'Arial',fontSize:'15px',color:'#fff2cf',backgroundColor:'#35594c',padding:{x:16,y:10}}).setOrigin(.5).setInteractive({useHandCursor:true});
+    // Action buttons live under the title, not at the canvas bottom:
+    // on wide desktop windows the canvas is centre-cropped vertically,
+    // and bottom-edge buttons can fall outside the visible area.
+    const rotate=this.add.text(480,this.phonePortrait?132:172,'↻  Rotate selected rib   ·   R',{fontFamily:'Arial',fontSize:'15px',color:'#fff2cf',backgroundColor:'#35594c',padding:{x:16,y:10}}).setOrigin(.5).setInteractive({useHandCursor:true});
     rotate.on('pointerdown',()=>this.rotateSelected());
     this.board.add(rotate);
   }
@@ -199,7 +202,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
   }
   showRainButton(){
     if(this.rainButton)return;
-    const btn=this.add.text(480,600,'🌧  Test it with rain',{fontFamily:'Arial',fontSize:'17px',fontStyle:'bold',color:'#fff2cf',backgroundColor:'#2e5d8a',padding:{x:20,y:12}}).setOrigin(.5).setInteractive({useHandCursor:true});
+    const btn=this.add.text(480,this.phonePortrait?132:174,'🌧  Test it with rain',{fontFamily:'Arial',fontSize:'17px',fontStyle:'bold',color:'#fff2cf',backgroundColor:'#2e5d8a',padding:{x:20,y:12}}).setOrigin(.5).setInteractive({useHandCursor:true});
     btn.on('pointerdown',()=>this.rainTest());
     this.board.add(btn);this.rainButton=btn;
   }

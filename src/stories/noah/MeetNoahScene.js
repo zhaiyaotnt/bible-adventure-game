@@ -74,7 +74,14 @@ export class MeetNoahScene extends ExploreScene {
   inventory(){const progress=this.app.save.stories[this.story.id];progress.inventory??={};return progress.inventory;}
   canStand(x,y){
     if(!super.canStand(x,y))return false;
-    if(Phaser.Geom.Polygon.Contains(this.waterPolygon,x,y))return this.steppingStones.some(([sx,sy])=>Phaser.Math.Distance.Between(x,y,sx,sy)<50);
+    if(Phaser.Geom.Polygon.Contains(this.waterPolygon,x,y)){
+      if(this.steppingStones.some(([sx,sy])=>Phaser.Math.Distance.Between(x,y,sx,sy)<50))return true;
+      // Escape hatch: if Aaron somehow ended up standing in open water
+      // (an edge case near the stones), never trap him there — let him
+      // walk out. Entering water from land is still blocked above.
+      const px=this.player?.x??x,py=this.player?.y??y;
+      return Phaser.Geom.Polygon.Contains(this.waterPolygon,px,py)&&!this.steppingStones.some(([sx,sy])=>Phaser.Math.Distance.Between(px,py,sx,sy)<50);
+    }
     return true;
   }
   // A tap in the stream almost always means "cross here": aim Aaron at
@@ -203,7 +210,7 @@ export class MeetNoahScene extends ExploreScene {
     if(!f.met_noah){this.app.dialogue('Noah',this.story.content.noah,{reference:this.story.content.reference,onComplete:()=>{f.met_noah=true;if(!this.app.save.discoveredCharacters.includes('noah'))this.app.save.discoveredCharacters.push('noah');this.app.persist();this.updateObjective();this.showFeedback('Quest updated · Explore the ark');}});return;}
     if(f.blueprint_complete&&!f.preview_complete){this.app.dialogue('The ark is finished!',this.story.content.complete,{fiction:false,reference:this.story.content.reference,onComplete:()=>this.completeQuest()});return;}
     if(f.build_unlocked){this.app.dialogue('Noah',this.story.content.build_progress,{fiction:true,reference:'Genesis 6:14–16'});return;}
-    if(f.supply_quest_complete&&f.pitch_taken){this.app.dialogue('Noah',this.story.content.build_start,{fiction:true,reference:'Genesis 6:14–16',onComplete:()=>{f.build_unlocked=true;this.app.persist();this.updateObjective();this.showFeedback('Quest updated · Help Noah build the ark');}});return;}
+    if(f.supply_quest_complete&&f.pitch_taken){this.app.dialogue('Noah',this.story.content.build_start,{fiction:true,reference:'Genesis 6:14–16',onComplete:()=>{f.build_unlocked=true;this.app.persist();this.updateObjective();this.showFeedback('Quest updated · Help Noah build the ark');this.hotspots=this.hotspots.filter(h=>!(h.x===1110&&h.y===245));this.hotspot(1110,245,this.planLabel(),()=>this.studyBlueprint(),88);}});return;}
     if(f.supply_quest_complete&&!f.pitch_taken){this.app.dialogue('Noah',this.story.content.pitch_reminder,{fiction:true,reference:'Genesis 6:14'});return;}
     this.app.dialogue('Noah',this.story.content.after_talk,{reference:this.story.content.reference});
   }
