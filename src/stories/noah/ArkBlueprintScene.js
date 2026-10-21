@@ -27,7 +27,6 @@ export class ArkBlueprintScene extends Phaser.Scene {
     this.stage=f.blueprint_complete?0:(f.ark_decks_done?3:(f.ark_ribs_done||f.blueprint_stage_one)?2:1);
     this.visualStage=f.blueprint_complete?3:this.stage;
     this.selected=null;this.dragging=null;this.raining=false;
-    this.input.on('pointerdown',p=>this.pointerDown(p));
     this.input.on('pointermove',p=>this.pointerMove(p));
     this.input.on('pointerup',p=>this.pointerUp(p));
     this.input.keyboard.on('keydown-R',()=>this.rotateSelected());
@@ -295,13 +294,24 @@ export class ArkBlueprintScene extends Phaser.Scene {
     c.id=id;c.kind=kind;c.placed=false;c.setDepth(20);
     // A rib's visual centre is its arc centre, offset below the container origin.
     if(kind==='rib')c.arcOffsetY=h/2-6;
+    // Selection ring: a gold outline shown while the piece is selected, so
+    // a tap on a piece always has a visible answer.
+    const ring=this.add.rectangle(0,0,w+12,h+12,0x000000,0).setStrokeStyle(3,0xffd968).setVisible(false);
+    ring.name='selring';c.addAt(ring,0);
+    // Pick pieces through Phaser's own game-object input rather than
+    // manual bounds checks: container bounds are unreliable for pieces
+    // drawn with Graphics (the ribs), which made them hard to grab.
+    c.on('pointerdown',pointer=>{
+      if(this.app.isBlocked()||this.raining||c.placed)return;
+      this.selectPiece(c);
+      this.dragging=c;this.dragOffset={x:c.x-pointer.worldX,y:c.y-pointer.worldY};c.setDepth(40);
+    });
     this.pieces.push(c);this.board.add(c);return c;
   }
-  pointerDown(pointer){
-    if(this.app.isBlocked()||this.raining)return;
-    for(const piece of [...this.pieces].reverse())if(piece.getBounds().contains(pointer.worldX,pointer.worldY)&&!piece.placed){
-      this.dragging=piece;this.selected=piece;this.dragOffset={x:piece.x-pointer.worldX,y:piece.y-pointer.worldY};piece.setDepth(40);return;
-    }
+  selectPiece(piece){
+    if(this.selected&&this.selected!==piece)this.selected.getByName('selring')?.setVisible(false);
+    this.selected=piece;
+    piece?.getByName('selring')?.setVisible(true);
   }
   pointerMove(pointer){if(this.dragging&&pointer.isDown)this.dragging.setPosition(pointer.worldX+this.dragOffset.x,pointer.worldY+this.dragOffset.y);}
   pointerUp(){
@@ -313,7 +323,8 @@ export class ArkBlueprintScene extends Phaser.Scene {
   }
   rotateSelected(){
     if(this.stage!==1)return;
-    const piece=this.selected;if(!piece||piece.placed||piece.kind!=='rib')return;
+    const piece=this.selected;
+    if(!piece||piece.placed||piece.kind!=='rib'){this.ping(480,this.phonePortrait?190:230,'Tap a rib first, then turn it upright.');return;}
     piece.rotation=Phaser.Math.Angle.Wrap(piece.rotation+Math.PI/2);
     const flags=this.flags();
     if(piece.id==='rib-a')flags.beam_a_rotated=Math.abs(piece.rotation)<.1;
@@ -322,6 +333,8 @@ export class ArkBlueprintScene extends Phaser.Scene {
   }
   placePiece(piece,x,y){
     piece.setPosition(x,y);piece.rotation=0;piece.placed=true;piece.disableInteractive();
+    piece.getByName('selring')?.setVisible(false);
+    if(this.selected===piece)this.selected=null;
     if(piece.flag){this.flags()[piece.flag]=true;}
     this.app.persist();this.feedback?.destroy();
   }
