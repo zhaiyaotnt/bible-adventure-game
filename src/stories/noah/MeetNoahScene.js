@@ -219,7 +219,10 @@ export class MeetNoahScene extends ExploreScene {
   inspectArk(){
     const f=this.flags();if(!f.met_noah){this.app.dialogue('The unfinished ark',this.story.content.before_noah,{fiction:false,reference:this.story.content.reference});return;}
     if(!f.inspected_ark){f.inspected_ark=true;this.app.persist();this.updateObjective();this.burst(970,305);this.app.dialogue('The ark',this.story.content.ark,{reference:'Genesis 6:14–16',onComplete:()=>{this.hotspot(1110,245,this.planLabel(),()=>this.studyBlueprint(),88);this.updateObjective();}});return;}
-    if(f.blueprint_complete){this.app.dialogue('The finished ark',this.story.content.ark_finished,{fiction:true,reference:'Genesis 6:14–16'});return;}
+    if(f.blueprint_complete){
+      if(!f.mx_complete){this.app.dialogue('Noah',this.story.content.mystery_invite,{fiction:true,reference:'Genesis 6:14–16',onComplete:()=>this.app.router.story(this.story.id,'ark_interior')});return;}
+      this.app.dialogue('The finished ark',this.story.content.ark_finished,{fiction:true,reference:'Genesis 6:14–16'});return;
+    }
     this.app.dialogue('The ark',this.story.content.ark,{reference:'Genesis 6:14–16'});
   }
   studyBlueprint(){

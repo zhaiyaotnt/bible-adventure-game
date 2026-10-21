@@ -33,3 +33,33 @@ footer{display:none}
 
 /* Direct phone movement: tap or drag on the world itself — no joystick. */
 canvas{image-rendering:auto;touch-action:none}
+
+/* Ark Mystery: blueprint button + blueprint panel */
+.ark-blueprint-open{position:absolute;right:4%;bottom:calc(120px + env(safe-area-inset-bottom));z-index:9;background:#ead097;color:#2a4438;border:3px solid #a69263;border-radius:8px;padding:13px 18px;font:600 15px system-ui,sans-serif;box-shadow:0 3px 0 #344b36}
+.panel.blueprint{max-width:940px;text-align:left}
+.bp-layout{display:grid;grid-template-columns:minmax(300px,1fr) 300px;gap:26px;margin-top:18px}
+.bp-board{display:grid;grid-template-columns:86px repeat(3,1fr);gap:8px;align-items:stretch}
+.bp-deck{font:600 10px system-ui,sans-serif;letter-spacing:1px;color:var(--gold);display:flex;align-items:center}
+.bp-cell{position:relative;min-height:86px;background:#22392f;border:1px solid #5c6f53;border-radius:6px;color:var(--cream);padding:20px 6px 6px;text-align:center}
+.bp-cell.filled{background:#35594c;border-color:#a5ac7b}
+.bp-cellid{position:absolute;top:5px;left:8px;font:700 11px system-ui,sans-serif;color:#9db5a4}
+.bp-room{display:block;font:600 13px/1.25 system-ui,sans-serif}
+.bp-marks{display:block;margin-top:5px;font:9px/1.4 system-ui,sans-serif;color:#dbc28b}
+.bp-palette{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 18px}
+.bp-chip{background:#2c4a3e;border:1px solid #839276;color:var(--cream);border-radius:20px;padding:8px 12px;font:600 12px system-ui,sans-serif;touch-action:none}
+.bp-chip.selected{background:var(--gold);color:#243d34;border-color:var(--gold)}
+.bp-ghost{position:fixed;z-index:60;pointer-events:none;transform:translate(-50%,-130%);background:var(--gold);color:#243d34;border-radius:20px;padding:8px 14px;font:600 12px system-ui,sans-serif;box-shadow:0 6px 18px #0006}
+.bp-actions{margin-top:14px;display:flex;gap:9px;flex-wrap:wrap}
+.bp-actions .primary,.bp-actions .secondary{padding:11px 14px;font-size:12px}
+.bp-message{font:14px/1.55 system-ui,sans-serif;color:#f0dfae;min-height:22px;margin:12px 0 0}
+.bp-hintbox{font:13px/1.6 system-ui,sans-serif;color:#cfe0c2;border-left:2px solid var(--gold);padding-left:14px;margin:12px 0 0}
+.bp-clues{display:grid;gap:8px;margin:8px 0 18px;max-height:300px;overflow:auto;padding-right:4px}
+.bp-clue{border:1px solid #5c6f5366;border-radius:6px;padding:9px 11px}
+.bp-clue strong{display:block;font:600 10px system-ui,sans-serif;letter-spacing:1px;color:var(--gold)}
+.bp-clue span{font:12.5px/1.5 system-ui,sans-serif;color:#dfe4cf}
+.bp-clue.missing{opacity:.55}
+.bp-notes{width:100%;background:#22392f;border:1px solid #5c6f53;border-radius:6px;color:var(--cream);padding:10px;font:13px system-ui,sans-serif;resize:vertical}
+.bp-finalbox{border:1px solid var(--gold);border-radius:8px;padding:16px 18px;margin-top:16px;background:#2c4a3e66}
+.bp-finalbox strong{font:600 13px system-ui,sans-serif;letter-spacing:1px;color:var(--gold)}
+.bp-finalbox p{font:14px/1.6 system-ui,sans-serif;margin:8px 0}
+@media(max-width:760px){.bp-layout{grid-template-columns:1fr}.bp-cell{min-height:74px}.bp-clues{max-height:220px}.ark-blueprint-open{bottom:calc(170px + env(safe-area-inset-bottom));padding:11px 14px;font-size:13px}}

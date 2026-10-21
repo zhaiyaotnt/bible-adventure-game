@@ -1,33 +1,124 @@
 {
-  "id": "noahs_ark", "title": "Noah’s Ark", "timelineOrder": 20, "era": "The Beginning",
-  "bibleReferences": ["Genesis 6–9"], "characters": ["noah"], "entryScene": "meet_noah",
-  "scenes": ["meet_noah", "ark_blueprint"], "published": true, "subtitle": "Explore Noah’s camp, gather supplies, and help build the ark.",
+  "id": "noahs_ark",
+  "title": "Noah’s Ark",
+  "timelineOrder": 20,
+  "era": "The Beginning",
+  "bibleReferences": [
+    "Genesis 6–9"
+  ],
+  "characters": [
+    "noah"
+  ],
+  "entryScene": "meet_noah",
+  "scenes": [
+    "meet_noah",
+    "ark_blueprint",
+    "ark_interior"
+  ],
+  "published": true,
+  "subtitle": "Explore Noah’s camp, gather supplies, and help build the ark.",
   "releaseNote": "Noah’s Ark · explore, gather, and build the ark",
   "content": {
     "objective": "Find Noah, inspect the ark, gather supplies, then help Noah build the ark.",
     "reference": "Genesis 6:13–22",
     "bible": "God instructed Noah to make an ark from gopher wood and cover it with pitch inside and outside. Genesis gives its dimensions as 300 cubits long, 50 cubits wide, and 30 cubits high. The passage also describes a roof, a door in the side, and three decks. This is a summary; read Genesis 6:13–16 in your Bible.",
-    "noah": ["Aaron! Glad you made it. I have a lot of work ahead of me. Would you help me gather some supplies?", "We'll need three pieces of wood, two coils of rope, and my hammer — and that jar of pitch by the stream, for sealing the ark. One piece of wood may be tucked behind that fallen log."],
-    "ark": ["The ark is enormous, isn't it? Come closer to the ramp and take a look.", "God gave Noah detailed instructions for the ark. You can read about them in Genesis 6."],
-    "discovery": ["You found a quiet place beside the stream. The whole adventure begins with listening and looking closely."],
-    "before_noah": ["The ark is still being prepared. Find Noah in the clearing; he can tell you more about the work."],
-    "inspect_first": ["The ark is an amazing sight. Walk up to the ramp and take a closer look before gathering materials."],
-    "after_talk": ["Thanks for helping, Aaron. Take your time exploring. I’ll be right here when you’re ready to show me what you found."],
-    "materials_complete": ["That's everything — wood, rope, hammer, and even the pitch! Bring them back to Noah."],
-    "return_noah": ["Great work, Aaron! The supplies are all here. That should help us get ready to build."],
-    "build_start": ["That's everything, Aaron — supplies, tools, and pitch. Now comes the best part.", "God gave me the plan: strong ribs, three decks, a door in the side, and pitch inside and out. Will you help me build it? The plan is waiting up by the ark."],
-    "build_locked": ["The plan is ready, but building can't start until all the supplies are at the building site: the wood, rope, my hammer, and the jar of pitch by the stream."],
-    "pitch_reminder": ["Almost ready to build — I still need that jar of pitch by the stream. We can't seal the ark without it."],
-    "build_progress": ["The ark is taking shape, Aaron. Ribs first, then the decks, then pitch and the door — one stage at a time. The plan by the ark shows what's next."],
-    "ark_finished": ["There it stands — finished, sealed, and ready. One day God will send the animals, two by two.", "For now, the ark waits. There will be more of this story to explore."],
-    "blueprint_clue": ["I found the plan beside the ark. Genesis says to use gopher wood and cover the ark with pitch inside and outside.", "The ark was 300 cubits long, 50 wide, and 30 high. It had a roof, a door in the side, and three decks. Let’s study the shape of the plan together."],
-    "blueprint_finished": ["You restored the keel and arranged all three decks. Genesis 6:14–16 records the instructions God gave Noah."],
-    "complete": ["You did it, Aaron! The ark stands finished — ribs, three decks, a door, a window, and pitch on every seam, just as God described.", "You earned the Noah character card. God kept His promise to Noah — and this is only the beginning of the story."],
+    "noah": [
+      "Aaron! Glad you made it. I have a lot of work ahead of me. Would you help me gather some supplies?",
+      "We'll need three pieces of wood, two coils of rope, and my hammer — and that jar of pitch by the stream, for sealing the ark. One piece of wood may be tucked behind that fallen log."
+    ],
+    "ark": [
+      "The ark is enormous, isn't it? Come closer to the ramp and take a look.",
+      "God gave Noah detailed instructions for the ark. You can read about them in Genesis 6."
+    ],
+    "discovery": [
+      "You found a quiet place beside the stream. The whole adventure begins with listening and looking closely."
+    ],
+    "before_noah": [
+      "The ark is still being prepared. Find Noah in the clearing; he can tell you more about the work."
+    ],
+    "inspect_first": [
+      "The ark is an amazing sight. Walk up to the ramp and take a closer look before gathering materials."
+    ],
+    "after_talk": [
+      "Thanks for helping, Aaron. Take your time exploring. I’ll be right here when you’re ready to show me what you found."
+    ],
+    "materials_complete": [
+      "That's everything — wood, rope, hammer, and even the pitch! Bring them back to Noah."
+    ],
+    "return_noah": [
+      "Great work, Aaron! The supplies are all here. That should help us get ready to build."
+    ],
+    "build_start": [
+      "That's everything, Aaron — supplies, tools, and pitch. Now comes the best part.",
+      "God gave me the plan: strong ribs, three decks, a door in the side, and pitch inside and out. Will you help me build it? The plan is waiting up by the ark."
+    ],
+    "build_locked": [
+      "The plan is ready, but building can't start until all the supplies are at the building site: the wood, rope, my hammer, and the jar of pitch by the stream."
+    ],
+    "pitch_reminder": [
+      "Almost ready to build — I still need that jar of pitch by the stream. We can't seal the ark without it."
+    ],
+    "build_progress": [
+      "The ark is taking shape, Aaron. Ribs first, then the decks, then pitch and the door — one stage at a time. The plan by the ark shows what's next."
+    ],
+    "ark_finished": [
+      "There it stands — finished, sealed, and ready. One day God will send the animals, two by two.",
+      "For now, the ark waits. There will be more of this story to explore."
+    ],
+    "blueprint_clue": [
+      "I found the plan beside the ark. Genesis says to use gopher wood and cover the ark with pitch inside and outside.",
+      "The ark was 300 cubits long, 50 wide, and 30 high. It had a roof, a door in the side, and three decks. Let’s study the shape of the plan together."
+    ],
+    "blueprint_finished": [
+      "You restored the keel and arranged all three decks. Genesis 6:14–16 records the instructions God gave Noah."
+    ],
+    "complete": [
+      "You did it, Aaron! The ark stands finished — ribs, three decks, a door, a window, and pitch on every seam, just as God described.",
+      "You earned the Noah character card. God kept His promise to Noah — and this is only the beginning of the story."
+    ],
     "discovery_build": {
       "title": "God gave Noah the plan",
       "verse": "God told Noah: make the ark from gopher wood, cover it inside and out with pitch, put a roof on it and a door in its side, and build three decks — lower, second, and third. (Genesis 6:14–16, summarized)",
       "observation": "God didn't just say “build a boat.” He gave Noah the wood, the covering, the door, the window, and three decks. God cares about the details — and Noah trusted Him before he had seen a single drop of rain.",
       "question": "Noah kept building for a long time before the flood came. What is something you can keep doing faithfully, even when it's hard to see why yet?"
+    },
+    "mystery_invite": [
+      "The outside is finished — but step inside, Aaron. The inside is still a mystery.",
+      "I know the ark needs nine rooms across its three decks, and I have notes and diagrams scattered everywhere. What I don't have is the finished plan.",
+      "Come in and help me work out where everything belongs."
+    ],
+    "mystery_intro": [
+      "Here it is: three decks, and nine rooms to place — birds, sheep, large animals, food, water, tools, the workshop, our family's quarters, and supplies.",
+      "My planning diagram is unfinished. But the ark itself remembers the plan: there are notes, labels and diagrams all over these decks, if you look carefully.",
+      "Explore every deck. When you find a clue, it will be added to the blueprint on my planning table. Then reason out where each room belongs.",
+      "And Aaron — I will not simply mark your work. A plan you only guessed is no plan at all."
+    ],
+    "mystery_status": [
+      "You have found {found} of the clues hidden in the ark. Keep exploring all three decks — some clues need a little work to uncover.",
+      "When you are ready, open the blueprint and start placing rooms. Use pencil marks for the maybes."
+    ],
+    "mystery_final": [
+      "Every condition holds? Wonderful. Then one last check before we build the rooms — the most important one, from a father's point of view.",
+      "One last thing: the living quarters must not be directly above the workshop. My family will never sleep with hammering underneath them!",
+      "Check the plan against that, and then submit it. If it passes, we build exactly what you have drawn."
+    ],
+    "mystery_congrats": [
+      "It passes. Every clue, and my final check too — this is a plan that works, Aaron.",
+      "You did not guess your way here. You explored, you gathered the evidence, and you reasoned. That is how good builders work.",
+      "Master Architect of the ark — your grandfather would be proud. Now, shall we see about some animals?"
+    ],
+    "mystery_done": [
+      "The rooms are being built to your plan, Master Architect. The animals will be arriving soon — that is the next great work."
+    ],
+    "reflection_mystery": {
+      "title": "God's Instructions, Noah's Faith",
+      "verse": "Noah did this; he did all that God commanded him. — Genesis 6:22",
+      "lessons": [
+        "God gave Noah specific instructions for building the ark — its size, its wood, its three decks (Genesis 6:14–16).",
+        "Noah obeyed what God commanded, carefully and completely, even before he could see the flood.",
+        "Through the ark, God provided a means of preservation through the coming judgment."
+      ],
+      "fictionNote": "The Bible tells us the ark had three decks, but it does not describe this nine-room layout. The room arrangement, the scattered clues and Aaron's investigation are fictional gameplay — the faithfulness is Noah's."
     }
   }
 }
