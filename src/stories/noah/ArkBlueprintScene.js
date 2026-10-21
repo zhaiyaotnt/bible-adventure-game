@@ -33,9 +33,49 @@ export class ArkBlueprintScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-R',()=>this.rotateSelected());
     this.input.keyboard.on('keydown-ESC',()=>this.leave());
     this.drawSky();
+    // Frame the whole stage by default: under ENVELOP the browser shows
+    // only the centre slice of the canvas, so without this the ark's ends
+    // and the piece trays fall off-screen on portrait phones. Players can
+    // pinch (or mouse-wheel) in up to 3x from the fit level.
+    this.fitZoom=this.computeFitZoom();this.userZoom=1;
+    const cam=this.cameras.main;cam.setZoom(this.fitZoom);cam.centerOn(480,320);
+    this.setupZoomGestures();
     this.board=this.add.container(0,0);this.pieces=[];this.slots=[];
     if(this.stage===0)this.drawCompletion();
     else{this.drawStage();this.updateHUD();}
+  }
+  computeFitZoom(){
+    const parent=this.scale.parentSize,game=this.scale.gameSize;
+    const parentAspect=parent.width/Math.max(1,parent.height),gameAspect=game.width/game.height;
+    return Math.min(parentAspect,gameAspect)/Math.max(parentAspect,gameAspect);
+  }
+  applyZoom(){
+    this.cameras.main.setZoom(Phaser.Math.Clamp(this.fitZoom*this.userZoom,this.fitZoom,this.fitZoom*3));
+  }
+  setupZoomGestures(){
+    this.input.addPointer(1);
+    const active=new Map();let lastDist=0;
+    const track=p=>active.set(p.id,{x:p.x,y:p.y});
+    this.input.on('pointerdown',p=>{
+      track(p);
+      if(active.size===2){this.dragging=null;const [a,b]=[...active.values()];lastDist=Math.hypot(a.x-b.x,a.y-b.y);}
+    });
+    this.input.on('pointermove',p=>{
+      if(!active.has(p.id))return;
+      track(p);
+      if(active.size===2){
+        const [a,b]=[...active.values()],d=Math.hypot(a.x-b.x,a.y-b.y);
+        if(lastDist>0&&d>0){this.userZoom=Phaser.Math.Clamp(this.userZoom*d/lastDist,1,3);this.applyZoom();}
+        lastDist=d;
+      }
+    });
+    const release=p=>{active.delete(p.id);lastDist=0;};
+    this.input.on('pointerup',release);
+    this.input.on('pointerupoutside',release);
+    this.input.on('pointercancel',release);
+    this.input.on('wheel',(pointer,currentlyOver,deltaX,deltaY)=>{
+      if(deltaY)this.userZoom=Phaser.Math.Clamp(this.userZoom*(deltaY<0?1.12:.89),1,3),this.applyZoom();
+    });
   }
   updateHUD(){
     const objectives={1:'Fit the keel and turn the ribs upright.',2:'Set the support posts, then lay the three decks.',3:'Pitch the seams, set the door and window, then test with rain.'};
@@ -59,7 +99,8 @@ export class ArkBlueprintScene extends Phaser.Scene {
     else this.drawSealStage();
   }
   addTopButton(){
-    const b=this.add.text(this.phonePortrait?480:876,this.phonePortrait?26:64,'← Meadow',{fontFamily:'Arial',fontSize:'15px',color:ink,backgroundColor:'#e2d1a7',padding:{x:13,y:10}}).setOrigin(this.phonePortrait?0.5:1,0).setInteractive({useHandCursor:true});
+    // Portrait: pin to the top-left corner — centred, it overlaps the title.
+    const b=this.add.text(this.phonePortrait?14:876,this.phonePortrait?14:64,'← Meadow',{fontFamily:'Arial',fontSize:'15px',color:ink,backgroundColor:'#e2d1a7',padding:{x:13,y:10}}).setOrigin(this.phonePortrait?0:1,0).setInteractive({useHandCursor:true});
     b.on('pointerdown',()=>this.leave());
     this.board.add(b);
   }

@@ -30,10 +30,12 @@ export class MeetNoahScene extends ExploreScene {
     cameraBounds();this.scale.on('resize',cameraBounds);this.events.once('shutdown',()=>this.scale.off('resize',cameraBounds));
     this.cameraManagedByScene=true;
     this.cameras.main.startFollow(this.player,true,.12,.12);
-    // Portrait used to zoom all the way out to 0.46 to fit the wide map,
-    // which made Aaron and the props tiny and fuzzy on a phone. Zoom in
-    // close to landscape level and let the follow camera do the travelling.
-    this.cameras.main.setZoom(window.innerHeight > window.innerWidth ? 0.95 : 1.08);
+    // Default framing sits wider than the old 0.95 portrait close-up:
+    // players want to see where they are. Pinch (or the mouse wheel)
+    // adjusts from here, out to the full-meadow fit level or in to 3x.
+    this.baseZoom=window.innerHeight>window.innerWidth?0.62:1.0;
+    this.minZoom=this.computeFitZoom();
+    this.userZoom=1;this.applyZoom();
     this.buildPeopleAndProps();
     const f=this.flags();
     // Previous preview saves could mark this scene complete after only two

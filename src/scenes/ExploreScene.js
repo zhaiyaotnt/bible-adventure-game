@@ -35,27 +35,31 @@ export class ExploreScene extends Phaser.Scene {
     // The camera always follows Aaron. The game is scaled ENVELOP: the
     // canvas keeps the game's aspect and the browser centre-crops the
     // overflow, so the visible slice is set by the PARENT element's shape,
-    // not the canvas size. Zoom from the parent's aspect (sqrt of the
-    // aspect mismatch keeps portrait phones readable without going
-    // extreme) and pad the camera bounds by half a viewport on every
-    // side, so follow can keep Aaron centred even at the world's edges
-    // instead of clamping a fixed frame he walks out of. A scene that
-    // manages its own camera (Noah's meadow) opts out via the flag.
+    // not the canvas size. The default zoom is the FIT zoom — the level at
+    // which the whole 960x640 view fits the displayed slice exactly — so a
+    // single-room scene shows the entire room on any screen shape. Players
+    // can pinch (or mouse-wheel) in from there; scenes with a bigger world
+    // pick their own base zoom and may allow zooming out to the fit level.
+    // Camera bounds are padded by half the fit view on every side, so
+    // follow can keep Aaron centred even at the world's edges instead of
+    // clamping a fixed frame he walks out of. A scene that manages its
+    // own camera (Noah's meadow) opts out via the flag.
     this.world={width:960,height:640}; this.cameraManagedByScene=false;
+    this.userZoom=1; this.baseZoom=1; this.minZoom=null;
     this.fitCamera=()=>{
       if(this.cameraManagedByScene)return;
-      const cam=this.cameras.main,parent=this.scale.parentSize,game=this.scale.gameSize;
-      const parentAspect=parent.width/Math.max(1,parent.height),gameAspect=game.width/game.height;
-      const ratio=Math.max(gameAspect/parentAspect,parentAspect/gameAspect);
-      const zoom=Phaser.Math.Clamp(Math.sqrt(ratio),1,2);
-      cam.setZoom(zoom);
-      const viewW=game.width/zoom,viewH=game.height/zoom;
+      const cam=this.cameras.main;
+      this.baseZoom=this.computeFitZoom();
+      this.minZoom=this.baseZoom;
+      this.applyZoom();
+      const viewW=960/this.baseZoom,viewH=640/this.baseZoom;
       cam.setBounds(-viewW/2,-viewH/2,this.world.width+viewW,this.world.height+viewH);
       cam.startFollow(this.player,true,.12,.12);
     };
     this.fitCamera();
     this.scale.on('resize',this.fitCamera);
     this.events.once('shutdown',()=>this.scale.off('resize',this.fitCamera));
+    this.setupZoomGestures();
     this.keys=this.input.keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,E,SPACE,ENTER,ESC');
     this.interactHandler=()=>{if(!app.isBlocked())this.interact();};
     for(const k of ['E','SPACE','ENTER'])this.keys[k].on('down',this.interactHandler);
@@ -63,6 +67,45 @@ export class ExploreScene extends Phaser.Scene {
     this.marker=label(this,0,0,'✦','#fff2c5',20).setDepth(12).setVisible(false);
     this.events.once('shutdown',()=>{ app.setPrompt(''); app.input.reset(); this.input.keyboard.resetKeys(); });
     if(!app.save.settings.reducedMotion)this.cameras.main.fadeIn(300,24,46,45);
+  }
+  // Zoom at which the full 960x640 canvas exactly fits the part of the
+  // canvas the browser actually displays under ENVELOP centre-cropping.
+  computeFitZoom(){
+    const parent=this.scale.parentSize,game=this.scale.gameSize;
+    const parentAspect=parent.width/Math.max(1,parent.height),gameAspect=game.width/game.height;
+    return Math.min(parentAspect,gameAspect)/Math.max(parentAspect,gameAspect);
+  }
+  applyZoom(){
+    const min=this.minZoom??this.baseZoom,max=Math.min(2.4,this.baseZoom*3);
+    this.cameras.main.setZoom(Phaser.Math.Clamp(this.baseZoom*this.userZoom,min,max));
+  }
+  // Two-finger pinch adjusts userZoom on top of the scene's base zoom;
+  // starting a pinch cancels any walk target so Aaron stands still.
+  // The mouse wheel does the same on desktop.
+  setupZoomGestures(){
+    this.input.addPointer(1);
+    const active=new Map();let lastDist=0;
+    const track=p=>active.set(p.id,{x:p.x,y:p.y});
+    this.input.on('pointerdown',p=>{
+      track(p);
+      if(active.size===2){this.moveTarget=null;this.touchPointerId=null;const [a,b]=[...active.values()];lastDist=Math.hypot(a.x-b.x,a.y-b.y);}
+    });
+    this.input.on('pointermove',p=>{
+      if(!active.has(p.id))return;
+      track(p);
+      if(active.size===2){
+        const [a,b]=[...active.values()],d=Math.hypot(a.x-b.x,a.y-b.y);
+        if(lastDist>0&&d>0){this.userZoom=Phaser.Math.Clamp(this.userZoom*d/lastDist,.3,3);this.applyZoom();}
+        lastDist=d;
+      }
+    });
+    const release=p=>{active.delete(p.id);lastDist=0;};
+    this.input.on('pointerup',release);
+    this.input.on('pointerupoutside',release);
+    this.input.on('pointercancel',release);
+    this.input.on('wheel',(pointer,currentlyOver,deltaX,deltaY)=>{
+      if(deltaY)this.userZoom=Phaser.Math.Clamp(this.userZoom*(deltaY<0?1.12:.89),.3,3),this.applyZoom();
+    });
   }
   wall(x,y,w,h){const wall=new Phaser.Geom.Rectangle(x,y,w,h);this.walls.push(wall);return wall;}
   hotspot(x,y,name,action,radius=78){this.hotspots.push({x,y,name,action,radius});}
