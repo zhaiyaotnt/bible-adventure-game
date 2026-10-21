@@ -1,0 +1,22 @@
+{
+  "id": "noahs_ark", "title": "Noah’s Ark", "timelineOrder": 20, "era": "The Beginning",
+  "bibleReferences": ["Genesis 6–9"], "characters": ["noah"], "entryScene": "meet_noah",
+  "scenes": ["meet_noah", "ark_blueprint"], "published": true, "subtitle": "Explore Noah’s camp and study the ark plan.",
+  "releaseNote": "Noah’s Ark · explore, learn, and build a blueprint",
+  "content": {
+    "objective": "Find Noah, inspect the ark, then restore his building plan.",
+    "reference": "Genesis 6:13–22",
+    "bible": "God instructed Noah to make an ark from gopher wood and cover it with pitch inside and outside. Genesis gives its dimensions as 300 cubits long, 50 cubits wide, and 30 cubits high. The passage also describes a roof, a door in the side, and three decks. This is a summary; read Genesis 6:13–16 in your Bible.",
+    "noah": ["Aaron! Glad you made it. I have a lot of work ahead of me. Would you help me gather some supplies?", "We'll need three pieces of wood, two coils of rope, and my hammer. I think I saw supplies around the meadow. One piece may be tucked behind that fallen log."],
+    "ark": ["The ark is enormous, isn't it? Come closer to the ramp and take a look.", "God gave Noah detailed instructions for the ark. You can read about them in Genesis 6."],
+    "discovery": ["You found a quiet place beside the stream. The whole adventure begins with listening and looking closely."],
+    "before_noah": ["The ark is still being prepared. Find Noah in the clearing; he can tell you more about the work."],
+    "inspect_first": ["The ark is an amazing sight. Walk up to the ramp and take a closer look before gathering materials."],
+    "after_talk": ["Thanks for helping, Aaron. Take your time exploring. I’ll be right here when you’re ready to show me what you found."],
+    "materials_complete": ["That's everything! You even found the supplies hidden by the log. Bring them back to Noah."],
+    "return_noah": ["Great work, Aaron! The supplies are all here. That should help us get ready to build."],
+    "blueprint_clue": ["I found the plan beside the ark. Genesis says to use gopher wood and cover the ark with pitch inside and outside.", "The ark was 300 cubits long, 50 wide, and 30 high. It had a roof, a door in the side, and three decks. Let’s study the shape of the plan together."],
+    "blueprint_finished": ["You restored the keel and arranged all three decks. Genesis 6:14–16 records the instructions God gave Noah."],
+    "complete": ["You met Noah, explored the ark, gathered materials, and returned to share what you found.", "Your progress is saved. This chapter is a playable learning slice; animal tracking, the flood, and the covenant are planned for later."]
+  }
+}

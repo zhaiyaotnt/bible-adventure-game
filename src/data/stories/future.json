@@ -1,0 +1,5 @@
+[
+ {"id":"creation","title":"Creation","timelineOrder":10,"era":"The Beginning","bibleReferences":["Genesis 1–2"],"published":false,"subtitle":"In the beginning…"},
+ {"id":"abraham","title":"God’s Call to Abraham","timelineOrder":40,"era":"The Patriarchs","bibleReferences":["Genesis 12"],"published":false,"subtitle":"A journey of trust."},
+ {"id":"exodus","title":"Through the Red Sea","timelineOrder":80,"era":"The Exodus","bibleReferences":["Exodus 13–14"],"published":false,"subtitle":"Witness God’s deliverance."}
+]
