@@ -79,7 +79,7 @@ export class ArkInteriorScene extends ExploreScene {
   updateObjective() {
     const f = this.flags();
     let objective;
-    if (f.mx_complete) objective = 'The Ark Mystery is complete. The animals are next — whenever Noah is ready.';
+    if (f.mx_complete) objective = f.flood_complete ? 'The chapter is complete — the flood came, and God shut the door.' : 'The Ark Mystery is complete! Leave the ark and find Noah in the meadow — dark clouds are gathering.';
     else if (f.mx_solved && !f.mx_final_given) objective = 'The plan satisfies every clue! Talk to Noah on the middle deck for his final check.';
     else if (f.mx_solved) objective = 'Open the blueprint and submit the final plan to Noah.';
     else objective = `Explore all three decks for clues to the nine-room plan. Clues found: ${this.foundCount()} of ${CLUES.length}. The blueprint is on the planning table (middle deck).`;
@@ -139,7 +139,11 @@ export class ArkInteriorScene extends ExploreScene {
   talkNoah() {
     const f = this.flags(), c = this.story.content;
     if (!f.mx_intro) { this.app.dialogue('Noah', c.mystery_intro, { fiction: true, reference: 'Genesis 6:14–16', onComplete: () => { f.mx_intro = true; this.app.persist(); this.updateObjective(); } }); return; }
-    if (f.mx_complete) { this.app.dialogue('Noah', c.mystery_done, { fiction: true, reference: 'Genesis 6:22' }); return; }
+    if (f.mx_complete) {
+      if (f.flood_complete) { this.app.dialogue('Noah', c.mystery_done, { fiction: true, reference: 'Genesis 6:22' }); return; }
+      this.app.dialogue('Noah', [...c.mystery_done, 'But do not stay below deck admiring it, Aaron. Go out and find me beside the ark — look at the sky. The rain God promised is almost here, and the valley will flood.'], { fiction: true, reference: 'Genesis 7:10' });
+      return;
+    }
     if (f.mx_solved && !f.mx_final_given) {
       this.app.dialogue('Noah', c.mystery_final, { fiction: true, reference: 'Genesis 6', onComplete: () => { f.mx_final_given = true; this.app.persist(); this.updateObjective(); this.app.toast('Final check noted on the blueprint. Open it and submit the plan. 📐'); } });
       return;
