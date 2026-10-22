@@ -4,7 +4,7 @@ export class ExploreScene extends Phaser.Scene {
   setup(app, spawn) {
     this.app=app; this.bounds={left:45,right:915,top:175,bottom:583}; this.hotspots=[]; this.walls=[]; this.direction='down'; this.velocity={x:0,y:0}; this.elapsed=0;
     character(this,'aaron',0xc67b4a,0x4d3e32);
-    this.player=this.add.image(spawn.x,spawn.y,'aaron-down-0').setOrigin(.5,.85).setDepth(10).setScale(.8);
+    this.player=this.add.image(spawn.x,spawn.y,'aaron-down-0').setOrigin(.5,.85).setDepth(10).setScale(1.05);
     this.player.setInteractive({ useHandCursor:false });
     // Direct touch movement, Poké Run style: no joystick. Tap the world and
     // Aaron walks to that point; hold and drag and he follows your finger in

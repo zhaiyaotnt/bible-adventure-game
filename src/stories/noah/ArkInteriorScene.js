@@ -126,7 +126,7 @@ export class ArkInteriorScene extends ExploreScene {
     this.hotspot(120, 500, 'Check the feed sack tag', () => this.grantClue(10), 84);
     // Noah.
     character(this, 'noah', 0xd9c8a9, 0x658580);
-    const noah = this.add.image(500, 478, 'noah-down-0').setOrigin(.5, .85).setDepth(478).setScale(1.05);
+    const noah = this.add.image(500, 478, 'noah-down-0').setOrigin(.5, .85).setDepth(478).setScale(1.35);
     label(this, 500, 394, 'NOAH', '#f9e7ba', 15);
     this.hotspot(500, 462, 'Talk to Noah', () => this.talkNoah(), 92);
     // Door back to the meadow + stairs.

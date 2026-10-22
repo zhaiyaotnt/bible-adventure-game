@@ -116,7 +116,7 @@ export class MeetNoahScene extends ExploreScene {
   }
   buildPeopleAndProps(){
     character(this,'noah',0x688687,0xd2d1bc,true);
-    this.noah=this.add.image(990,570,'noah-down-0').setOrigin(.5,.85).setScale(1.1).setDepth(571);
+    this.noah=this.add.image(990,570,'noah-down-0').setOrigin(.5,.85).setScale(1.4).setDepth(571);
     if(!this.app.save.settings.reducedMotion)this.tweens.add({targets:this.noah,y:567,duration:950,yoyo:true,repeat:-1,ease:'Sine.inOut'});
     label(this,990,595,'NOAH','#fff0cc',13).setDepth(572);
     const sheep=this.add.container(520,710).setDepth(711).setScale(1.3);const body=this.add.ellipse(0,0,33,23,0xf1e7ce);sheep.add(body);sheep.add(this.add.circle(-14,2,4,0x4a4438));sheep.add(this.add.circle(14,2,4,0x4a4438));sheep.add(this.add.triangle(17,-7,0,9,8,0,0,0,0x4a4438));
