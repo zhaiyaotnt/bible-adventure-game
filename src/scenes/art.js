@@ -2,12 +2,12 @@
 import Phaser from 'phaser';
 export const C = { ink:0x263c39, grass:0x81a867, darkGrass:0x658c56, leaf:0x3c7355, lightLeaf:0x579364, wood:0x976747, lightWood:0xb68a59, path:0xd6c18a };
 export function rect(scene,x,y,w,h,color,alpha=1) { return scene.add.rectangle(x,y,w,h,color,alpha).setOrigin(0); }
-export function label(scene,x,y,text,color='#fff1cf',size=14) { return scene.add.text(x,y,text,{fontFamily:'monospace',fontSize:size,color,stroke:'#263c39',strokeThickness:3,resolution:6}).setOrigin(.5); }
+export function label(scene,x,y,text,color='#fff1cf',size=14) { return scene.add.text(x,y,text,{fontFamily:'monospace',fontSize:size,color,stroke:'#263c39',strokeThickness:3,resolution:4}).setOrigin(.5); }
 // Phaser text is rasterised at resolution 1 by default, which looks
 // smeared on retina phone screens next to the crisp DOM UI. All canvas
 // text in the game goes through label() above or text() here so it is
 // rasterised at 3x and downscaled sharp.
-export function text(scene,x,y,str,style={}) { return scene.add.text(x,y,str,{...style,resolution:6}); }
+export function text(scene,x,y,str,style={}) { return scene.add.text(x,y,str,{...style,resolution:4}); }
 // Supersampling factor of the game canvas over the 960-wide world
 // (1 on a standard display, up to 3 on retina phones). Camera zooms
 // are expressed in world terms and multiplied by this when applied.

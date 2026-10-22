@@ -79,9 +79,11 @@ document.addEventListener('keydown',e=>{
 window.addEventListener('blur',()=>{if(app.saved)app.persist();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&app.saved)app.persist();});setInterval(()=>{if(app.saved)app.persist();},30000);
 // Phaser has no game-canvas resolution setting: the canvas backing is
 // always exactly the game size. So supersample by making the game size
-// itself a multiple of the 960x640 world (capped at the display's pixel
-// density); ENVELOP then scales that bigger canvas back down to the
-// screen, and every camera zoom is multiplied by the same factor (see
-// renderScale in scenes/art.js), leaving framing unchanged.
-const RENDER_SCALE=Math.min(window.devicePixelRatio||1,3);
+// itself a multiple of the 960x640 world; ENVELOP then scales that
+// bigger canvas back down to the screen, and every camera zoom is
+// multiplied by the same factor (see renderScale in scenes/art.js),
+// leaving framing unchanged. Capped at 2: at 3 (2880x1920 WebGL +
+// antialiasing + hi-res text textures) iOS Safari killed the page
+// process for memory ("A problem repeatedly occurred", 2026-10-21).
+const RENDER_SCALE=Math.min(window.devicePixelRatio||1,2);
 new Phaser.Game({type:Phaser.AUTO,parent:'game',width:960*RENDER_SCALE,height:640*RENDER_SCALE,backgroundColor:'#203a37',pixelArt:false,roundPixels:false,scale:{mode:Phaser.Scale.ENVELOP,autoCenter:Phaser.Scale.CENTER_BOTH},input:{keyboard:{capture:[32,37,38,39,40]}},scene:[BootScene,HomeBaseScene,MeetNoahScene,ArkBlueprintScene,ArkInteriorScene],render:{antialias:true}});
