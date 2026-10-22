@@ -2,12 +2,12 @@
 import Phaser from 'phaser';
 export const C = { ink:0x263c39, grass:0x81a867, darkGrass:0x658c56, leaf:0x3c7355, lightLeaf:0x579364, wood:0x976747, lightWood:0xb68a59, path:0xd6c18a };
 export function rect(scene,x,y,w,h,color,alpha=1) { return scene.add.rectangle(x,y,w,h,color,alpha).setOrigin(0); }
-export function label(scene,x,y,text,color='#fff1cf',size=14) { return scene.add.text(x,y,text,{fontFamily:'monospace',fontSize:size,color,stroke:'#263c39',strokeThickness:3,resolution:3}).setOrigin(.5); }
+export function label(scene,x,y,text,color='#fff1cf',size=14) { return scene.add.text(x,y,text,{fontFamily:'monospace',fontSize:size,color,stroke:'#263c39',strokeThickness:3,resolution:6}).setOrigin(.5); }
 // Phaser text is rasterised at resolution 1 by default, which looks
 // smeared on retina phone screens next to the crisp DOM UI. All canvas
 // text in the game goes through label() above or text() here so it is
 // rasterised at 3x and downscaled sharp.
-export function text(scene,x,y,str,style={}) { return scene.add.text(x,y,str,{...style,resolution:3}); }
+export function text(scene,x,y,str,style={}) { return scene.add.text(x,y,str,{...style,resolution:6}); }
 export function tree(scene,x,y,size=1) {
   const g=scene.add.graphics().setPosition(x,y).setScale(size);
   g.fillStyle(0x304c3d,.18).fillEllipse(0,11,76,24);
@@ -19,7 +19,10 @@ export function tree(scene,x,y,size=1) {
 export function character(scene,key,robe,hair,beard=false) {
   if (scene.textures.exists(key+'-down-0')) return;
   for (const dir of ['down','down-left','left','up-left','up','up-right','right','down-right']) for(let frame=0;frame<4;frame++) {
-    const g=scene.make.graphics({x:0,y:0,add:false});
+    // Rasterise at 3x (240x288) so the figures stay crisp when the
+    // camera zooms in; display scales in the scenes are divided by 3
+    // to compensate, so on-screen size is unchanged.
+    const g=scene.make.graphics({x:0,y:0,add:false}); g.setScale(3);
     const step=frame===2?-4:frame===3?4:0,breathe=frame===1?-1:0;
     const skin=0xd9a77d,skinLight=0xe8bd95,shoe=0x4a4037;
     // Soft ground shadow, rounded clothing and distinct proportions read clearly
@@ -58,7 +61,7 @@ export function character(scene,key,robe,hair,beard=false) {
         g.lineStyle(2,0x9b604a).lineBetween(35,43+breathe,45,43+breathe);
       }
     }
-    g.generateTexture(`${key}-${dir}-${frame}`,80,96); g.destroy();
+    g.generateTexture(`${key}-${dir}-${frame}`,240,288); g.destroy();
   }
 }
 export function book(scene,x,y) { rect(scene,x-20,y-12,40,27,0x374e50); rect(scene,x-17,y-15,33,24,0xf0d9a4); rect(scene,x-1,y-13,2,23,0xa2875e); }
