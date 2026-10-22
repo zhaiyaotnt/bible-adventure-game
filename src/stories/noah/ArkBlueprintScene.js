@@ -362,10 +362,14 @@ export class ArkBlueprintScene extends Phaser.Scene {
     if(this.stage!==1)return;
     const piece=this.selected;
     if(!piece||piece.placed||piece.kind!=='rib'){this.ping(480,this.phonePortrait?242:230,'Tap a rib first, then turn it upright.');return;}
-    piece.rotation=Phaser.Math.Angle.Wrap(piece.rotation+Math.PI/2);
+    // One tap turns the rib upright — the only orientation a rib is
+    // ever fitted at. (This used to blind-cycle +90° per tap, so the
+    // first tap turned the rib upside down and it took three taps to
+    // come back upright, which read as "rotate doesn't work".)
+    piece.rotation=0;
     const flags=this.flags();
-    if(piece.id==='rib-a')flags.beam_a_rotated=Math.abs(piece.rotation)<.1;
-    if(piece.id==='rib-b')flags.beam_b_rotated=Math.abs(piece.rotation)<.1;
+    if(piece.id==='rib-a')flags.beam_a_rotated=true;
+    if(piece.id==='rib-b')flags.beam_b_rotated=true;
     this.app.persist();this.ping(piece.x,piece.y-60,'Turned upright');
   }
   placePiece(piece,x,y){
