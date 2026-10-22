@@ -13,7 +13,8 @@
   "scenes": [
     "meet_noah",
     "ark_blueprint",
-    "ark_interior"
+    "ark_interior",
+    "rising_flood"
   ],
   "published": true,
   "subtitle": "Explore Noah’s camp, gather supplies, and help build the ark.",
@@ -119,6 +120,14 @@
         "Through the ark, God provided a means of preservation through the coming judgment."
       ],
       "fictionNote": "The Bible tells us the ark had three decks, but it does not describe this nine-room layout. The room arrangement, the scattered clues and Aaron's investigation are fictional gameplay — the faithfulness is Noah's."
-    }
+    },
+    "flood_invite": [
+      "Aaron. The animals are coming to the ark two by two, just as God commanded — but look at the sky over the valley.",
+      "The rain is coming: the very flood God warned me about. The way back from the grazing valley crosses low ground, and the waters will rise fast.",
+      "Cross the valley while there is time. Read the water, use the high ground, and plan every crossing before you take it. On the far side you will see the ark — and you will see who shuts its door."
+    ],
+    "flood_done": [
+      "You saw it with your own eyes, Aaron: I did not shut the door of the ark. God shut it — and He always keeps what He promises."
+    ]
   }
 }

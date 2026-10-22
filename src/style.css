@@ -68,3 +68,8 @@ canvas{image-rendering:auto;touch-action:none}
 #hud{transition:transform .25s ease,opacity .25s ease}
 #hud.hud-hidden{transform:translateY(-135%);opacity:0;pointer-events:none}
 #hud-toggle{position:absolute;top:10px;right:10px;z-index:12;width:34px;height:34px;border-radius:50%;background:#1c342fcc;border:1px solid #92a479;color:#fff0bf;font-size:16px;line-height:1}
+/* The Rising Flood: control bar */
+.flood-controls{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(108px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:9;flex-wrap:wrap;justify-content:center;max-width:96vw}
+.flood-controls button{background:#ead097;color:#2a4438;border:3px solid #a69263;border-radius:8px;padding:10px 13px;font:600 14px system-ui,sans-serif;box-shadow:0 3px 0 #344b36;cursor:pointer}
+.flood-controls button:disabled{opacity:.45;cursor:default}
+.flood-controls button.active{background:#9fd3f2;border-color:#4a7ba6}
