@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { text } from '../../scenes/art.js';
+import { text, renderScale } from '../../scenes/art.js';
 
 const ink = '#273e38';
 const wood = 0xb98453;
@@ -39,7 +39,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
     // and the piece trays fall off-screen on portrait phones. Players can
     // pinch (or mouse-wheel) in up to 3x from the fit level.
     this.fitZoom=this.computeFitZoom();this.userZoom=1;
-    const cam=this.cameras.main;cam.setZoom(this.fitZoom);cam.centerOn(480,320);
+    const cam=this.cameras.main;cam.setZoom(this.fitZoom*renderScale(this));cam.centerOn(480,320);
     this.setupZoomGestures();
     this.board=this.add.container(0,0);this.pieces=[];this.slots=[];
     if(this.stage===0)this.drawCompletion();
@@ -51,7 +51,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
     return Math.min(parentAspect,gameAspect)/Math.max(parentAspect,gameAspect);
   }
   applyZoom(){
-    this.cameras.main.setZoom(Phaser.Math.Clamp(this.fitZoom*this.userZoom,this.fitZoom,this.fitZoom*3));
+    this.cameras.main.setZoom(Phaser.Math.Clamp(this.fitZoom*this.userZoom,this.fitZoom,this.fitZoom*3)*renderScale(this));
   }
   setupZoomGestures(){
     this.input.addPointer(1);

@@ -8,6 +8,10 @@ export function label(scene,x,y,text,color='#fff1cf',size=14) { return scene.add
 // text in the game goes through label() above or text() here so it is
 // rasterised at 3x and downscaled sharp.
 export function text(scene,x,y,str,style={}) { return scene.add.text(x,y,str,{...style,resolution:6}); }
+// Supersampling factor of the game canvas over the 960-wide world
+// (1 on a standard display, up to 3 on retina phones). Camera zooms
+// are expressed in world terms and multiplied by this when applied.
+export function renderScale(scene) { return (scene.scale.gameSize.width || 960) / 960; }
 export function tree(scene,x,y,size=1) {
   const g=scene.add.graphics().setPosition(x,y).setScale(size);
   g.fillStyle(0x304c3d,.18).fillEllipse(0,11,76,24);

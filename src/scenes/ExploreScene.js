@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { character, label } from './art.js';
+import { character, label, renderScale } from './art.js';
 export class ExploreScene extends Phaser.Scene {
   setup(app, spawn) {
     this.app=app; this.bounds={left:45,right:915,top:175,bottom:583}; this.hotspots=[]; this.walls=[]; this.direction='down'; this.velocity={x:0,y:0}; this.elapsed=0;
@@ -77,7 +77,7 @@ export class ExploreScene extends Phaser.Scene {
   }
   applyZoom(){
     const min=this.minZoom??this.baseZoom,max=Math.min(2.4,this.baseZoom*3);
-    this.cameras.main.setZoom(Phaser.Math.Clamp(this.baseZoom*this.userZoom,min,max));
+    this.cameras.main.setZoom(Phaser.Math.Clamp(this.baseZoom*this.userZoom,min,max)*renderScale(this));
   }
   // Two-finger pinch adjusts userZoom on top of the scene's base zoom;
   // starting a pinch cancels any walk target so Aaron stands still.

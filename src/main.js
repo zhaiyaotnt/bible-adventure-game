@@ -77,4 +77,11 @@ document.addEventListener('keydown',e=>{
 // small tab remains to pull it back down.
 (()=>{const play=document.getElementById('play'),hud=document.getElementById('hud');if(!play||!hud)return;const tab=document.createElement('button');tab.type='button';tab.id='hud-toggle';tab.textContent='⌃';tab.setAttribute('aria-label','Hide or show the top banner');tab.addEventListener('click',()=>{const hidden=hud.classList.toggle('hud-hidden');tab.textContent=hidden?'⌄':'⌃';});play.appendChild(tab);})();
 window.addEventListener('blur',()=>{if(app.saved)app.persist();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&app.saved)app.persist();});setInterval(()=>{if(app.saved)app.persist();},30000);
-new Phaser.Game({type:Phaser.AUTO,parent:'game',width:960,height:640,backgroundColor:'#203a37',pixelArt:false,roundPixels:false,resolution:Math.min(window.devicePixelRatio||1,3),scale:{mode:Phaser.Scale.ENVELOP,autoCenter:Phaser.Scale.CENTER_BOTH},input:{keyboard:{capture:[32,37,38,39,40]}},scene:[BootScene,HomeBaseScene,MeetNoahScene,ArkBlueprintScene,ArkInteriorScene],render:{antialias:true}});
+// Phaser has no game-canvas resolution setting: the canvas backing is
+// always exactly the game size. So supersample by making the game size
+// itself a multiple of the 960x640 world (capped at the display's pixel
+// density); ENVELOP then scales that bigger canvas back down to the
+// screen, and every camera zoom is multiplied by the same factor (see
+// renderScale in scenes/art.js), leaving framing unchanged.
+const RENDER_SCALE=Math.min(window.devicePixelRatio||1,3);
+new Phaser.Game({type:Phaser.AUTO,parent:'game',width:960*RENDER_SCALE,height:640*RENDER_SCALE,backgroundColor:'#203a37',pixelArt:false,roundPixels:false,scale:{mode:Phaser.Scale.ENVELOP,autoCenter:Phaser.Scale.CENTER_BOTH},input:{keyboard:{capture:[32,37,38,39,40]}},scene:[BootScene,HomeBaseScene,MeetNoahScene,ArkBlueprintScene,ArkInteriorScene],render:{antialias:true}});
