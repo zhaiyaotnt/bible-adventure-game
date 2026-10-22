@@ -1,6 +1,6 @@
 import { ExploreScene } from '../../scenes/ExploreScene.js';
 import Phaser from 'phaser';
-import { character, label } from '../../scenes/art.js';
+import { character, label, text } from '../../scenes/art.js';
 import { addItem, hasItems, inventoryCount } from '../../core/Inventory.js';
 import meadow from '../../assets/noah-meadow-concept.jpg';
 import meadowStage0 from '../../assets/noah-meadow-stage0.jpg';
@@ -159,7 +159,7 @@ export class MeetNoahScene extends ExploreScene {
       if(!this.logMoved&&(Math.abs(this.log.y-this.dragStart.y)>64||Math.abs(this.log.x-this.dragStart.x)>64)){this.logMoved=true;this.flags().log_moved=true;this.log.setDepth(this.log.y);this.hiddenWood.setVisible(true);this.hiddenSpark.setVisible(true);this.hotspots=this.hotspots.filter(h=>h.name!=='Drag the fallen log aside');const hidden=this.materialSpots().find(item=>item.key==='wood_3');if(!this.flags()[hidden.key])this.hotspot(hidden.x,hidden.y,hidden.name,()=>this.collect(hidden),68);this.app.persist();this.showFeedback('You shifted the fallen log. A supply was tucked behind it!');this.burst(this.hiddenWood.x,this.hiddenWood.y);}
     });
     this.hiddenWood=this.materialArt.wood_3;
-    this.hiddenSpark=this.add.text(x,y-30,'✦',{fontSize:'18px',color:'#fff0ad'}).setOrigin(.5).setDepth(y+5).setVisible(false);
+    this.hiddenSpark=text(this,x,y-30,'✦',{fontSize:'18px',color:'#fff0ad'}).setOrigin(.5).setDepth(y+5).setVisible(false);
     if(!this.app.save.settings.reducedMotion)this.tweens.add({targets:this.hiddenSpark,y:y-38,alpha:.35,duration:800,yoyo:true,repeat:-1});
     if(this.flags().log_moved){this.logMoved=true;this.log.setY(y-82);this.logWall.setTo(this.log.x-50,this.log.y-16,100,32);this.hiddenWood.setVisible(true);this.hiddenSpark.setVisible(true);}
   }
@@ -179,7 +179,7 @@ export class MeetNoahScene extends ExploreScene {
     hammer.add(this.add.rectangle(2,-11,22,8,0x777767).setAngle(-20));hammer.add(this.add.rectangle(-7,-11,8,13,0x777767).setAngle(-20));
     // A warm pulse and small glint make each quest prop legible against the grass.
     for(const [x,y] of [[590,730],[905,645],[1120,660],[1370,790],[1070,875],[680,890]]){
-      const glint=this.add.text(x+20,y-22,'✦',{fontSize:'14px',color:'#fff0ad'}).setOrigin(.5).setDepth(y+20);
+      const glint=text(this,x+20,y-22,'✦',{fontSize:'14px',color:'#fff0ad'}).setOrigin(.5).setDepth(y+20);
       if(!this.app.save.settings.reducedMotion)this.tweens.add({targets:glint,y:y-28,alpha:.35,duration:800,yoyo:true,repeat:-1});
     }
     this.materialArt={wood_1:wood1,wood_2:wood2,wood_3:wood3,rope_1:rope1,rope_2:rope2,tool_1:hammer,pitch:jar};
@@ -248,7 +248,7 @@ export class MeetNoahScene extends ExploreScene {
   showFeedback(message){this.app.toast(message);}
   burst(x,y){
     if(this.app.save.settings.reducedMotion)return;
-    for(let i=0;i<16;i++){const a=i*Math.PI/8,star=this.add.text(x,y,'✦',{fontSize:'16px',color:'#fff0a8'}).setOrigin(.5).setDepth(1200);this.tweens.add({targets:star,x:x+Math.cos(a)*65,y:y+Math.sin(a)*55,alpha:0,scale:.25,duration:560,onComplete:()=>star.destroy()});}
+    for(let i=0;i<16;i++){const a=i*Math.PI/8,star=text(this,x,y,'✦',{fontSize:'16px',color:'#fff0a8'}).setOrigin(.5).setDepth(1200);this.tweens.add({targets:star,x:x+Math.cos(a)*65,y:y+Math.sin(a)*55,alpha:0,scale:.25,duration:560,onComplete:()=>star.destroy()});}
   }
   updateObjective(){
     const f=this.flags(),bag=this.inventory(),wood=inventoryCount(bag,'wood'),rope=inventoryCount(bag,'rope'),tool=inventoryCount(bag,'tool'),pitch=inventoryCount(bag,'pitch');

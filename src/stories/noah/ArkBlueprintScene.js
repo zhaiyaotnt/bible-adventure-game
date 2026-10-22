@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { text } from '../../scenes/art.js';
 
 const ink = '#273e38';
 const wood = 0xb98453;
@@ -100,7 +101,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
   }
   addTopButton(){
     // Portrait: pin to the top-left corner — centred, it overlaps the title.
-    const b=this.add.text(this.phonePortrait?118:876,this.phonePortrait?16:64,'← Meadow',{fontFamily:'Arial',fontSize:this.phonePortrait?'19px':'15px',color:ink,backgroundColor:'#e2d1a7',padding:{x:13,y:10}}).setOrigin(this.phonePortrait?0:1,0).setInteractive({useHandCursor:true});
+    const b=text(this,this.phonePortrait?118:876,this.phonePortrait?16:64,'← Meadow',{fontFamily:'Arial',fontSize:this.phonePortrait?'19px':'15px',color:ink,backgroundColor:'#e2d1a7',padding:{x:13,y:10}}).setOrigin(this.phonePortrait?0:1,0).setInteractive({useHandCursor:true});
     b.on('pointerdown',()=>this.leave());
     this.board.add(b);this.addZone(b,()=>this.leave());
   }
@@ -108,8 +109,8 @@ export class ArkBlueprintScene extends Phaser.Scene {
     // Portrait now frames the whole stage at fit zoom (~0.31), which
     // shrinks canvas text to a few pixels — so portrait fonts are much
     // larger than they were in the old cropped view.
-    this.board.add(this.add.text(480,this.phonePortrait?74:96,title,{fontFamily:'Georgia',fontSize:this.phonePortrait?'31px':'24px',fontStyle:'bold',color:ink,align:'center',wordWrap:{width:this.phonePortrait?620:820}}).setOrigin(.5));
-    this.board.add(this.add.text(480,this.phonePortrait?126:130,sub,{fontFamily:'Georgia',fontSize:this.phonePortrait?'22px':'16px',color:'#42503f',align:'center',wordWrap:{width:this.phonePortrait?600:760}}).setOrigin(.5));
+    this.board.add(text(this,480,this.phonePortrait?74:96,title,{fontFamily:'Georgia',fontSize:this.phonePortrait?'31px':'24px',fontStyle:'bold',color:ink,align:'center',wordWrap:{width:this.phonePortrait?620:820}}).setOrigin(.5));
+    this.board.add(text(this,480,this.phonePortrait?126:130,sub,{fontFamily:'Georgia',fontSize:this.phonePortrait?'22px':'16px',color:'#42503f',align:'center',wordWrap:{width:this.phonePortrait?600:760}}).setOrigin(.5));
   }
   // The ark side view grows with progress: bare ribs first, planked lower
   // hull next, then the full hull with its roof house for sealing.
@@ -169,7 +170,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
     // Action buttons live under the title, not at the canvas bottom:
     // on wide desktop windows the canvas is centre-cropped vertically,
     // and bottom-edge buttons can fall outside the visible area.
-    const rotate=this.add.text(480,this.phonePortrait?182:172,'↻  Rotate selected rib   ·   R',{fontFamily:'Arial',fontSize:this.phonePortrait?'20px':'15px',color:'#fff2cf',backgroundColor:'#35594c',padding:{x:16,y:10}}).setOrigin(.5).setInteractive({useHandCursor:true});
+    const rotate=text(this,480,this.phonePortrait?182:172,'↻  Rotate selected rib   ·   R',{fontFamily:'Arial',fontSize:this.phonePortrait?'20px':'15px',color:'#fff2cf',backgroundColor:'#35594c',padding:{x:16,y:10}}).setOrigin(.5).setInteractive({useHandCursor:true});
     rotate.on('pointerdown',()=>this.rotateSelected());
     this.board.add(rotate);this.rotateBtn=rotate;this.addZone(rotate,()=>this.rotateSelected());
   }
@@ -246,7 +247,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
   }
   showRainButton(){
     if(this.rainButton)return;
-    const btn=this.add.text(480,this.phonePortrait?182:174,'🌧  Test it with rain',{fontFamily:'Arial',fontSize:this.phonePortrait?'21px':'17px',fontStyle:'bold',color:'#fff2cf',backgroundColor:'#2e5d8a',padding:{x:20,y:12}}).setOrigin(.5).setInteractive({useHandCursor:true});
+    const btn=text(this,480,this.phonePortrait?182:174,'🌧  Test it with rain',{fontFamily:'Arial',fontSize:this.phonePortrait?'21px':'17px',fontStyle:'bold',color:'#fff2cf',backgroundColor:'#2e5d8a',padding:{x:20,y:12}}).setOrigin(.5).setInteractive({useHandCursor:true});
     btn.on('pointerdown',()=>this.rainTest());
     this.board.add(btn);this.rainButton=btn;this.addZone(btn,()=>this.rainTest());
   }
@@ -263,7 +264,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
       this.tweens.add({targets:drop,y:y+300+Math.random()*90,alpha:.15,duration:620+Math.random()*260,repeat:2,onComplete:()=>drop.destroy()});
     }
     // Beading sparkles on the sealed hull: the pitch is doing its job.
-    this.time.delayedCall(900,()=>{for(let i=0;i<10;i++){const sx=this.X(-260+i*58),sy=this.Y(-60-(i%3)*44);const s=this.add.text(sx,sy,'✦',{fontSize:'15px',color:'#fff3b0'}).setOrigin(.5).setDepth(61);this.tweens.add({targets:s,alpha:0,y:sy-14,duration:800,onComplete:()=>s.destroy()});}});
+    this.time.delayedCall(900,()=>{for(let i=0;i<10;i++){const sx=this.X(-260+i*58),sy=this.Y(-60-(i%3)*44);const s=text(this,sx,sy,'✦',{fontSize:'15px',color:'#fff3b0'}).setOrigin(.5).setDepth(61);this.tweens.add({targets:s,alpha:0,y:sy-14,duration:800,onComplete:()=>s.destroy()});}});
     this.time.delayedCall(2100,()=>{cloud.destroy();this.raining=false;this.finishSealing();});
   }
   // ---- Pieces ----
@@ -272,13 +273,13 @@ export class ArkBlueprintScene extends Phaser.Scene {
     if(kind==='plank'){
       c.add(this.add.rectangle(0,0,w,h,wood).setStrokeStyle(3,0x704d36));
       c.add(this.add.rectangle(0,-h/2+5,w-12,3,0xe4bb7e,.8));
-      if(label)c.add(this.add.text(0,0,label,{fontFamily:'Arial',fontSize:'13px',fontStyle:'bold',color:'#513e2f'}).setOrigin(.5));
+      if(label)c.add(text(this,0,0,label,{fontFamily:'Arial',fontSize:'13px',fontStyle:'bold',color:'#513e2f'}).setOrigin(.5));
     } else if(kind==='rib'){
       const g=this.add.graphics();g.lineStyle(Math.max(6,10*this.S),darkWood);
       g.beginPath();g.arc(0,h/2-6,w/2,Math.PI,2*Math.PI);g.strokePath();
       g.lineStyle(3,0xe4bb7e);g.beginPath();g.arc(0,h/2-6,w/2-8,Math.PI,2*Math.PI);g.strokePath();
       c.add(g);
-      if(label)c.add(this.add.text(0,h/2+8,label,{fontFamily:'Arial',fontSize:'12px',fontStyle:'bold',color:'#513e2f'}).setOrigin(.5));
+      if(label)c.add(text(this,0,h/2+8,label,{fontFamily:'Arial',fontSize:'12px',fontStyle:'bold',color:'#513e2f'}).setOrigin(.5));
     } else if(kind==='pillar'){
       c.add(this.add.rectangle(0,0,w,h,darkWood).setStrokeStyle(2,0x5d3d22));
       c.add(this.add.rectangle(0,-h/2+6,w+10,7,wood));
@@ -452,15 +453,15 @@ export class ArkBlueprintScene extends Phaser.Scene {
     this.stage=0;this.visualStage=3;this.board.removeAll(true);this.pieces=[];this.slots=[];this.zones=[];
     this.addTopButton();
     this.drawArkBase();
-    this.board.add(this.add.text(480,180,'The ark is finished!',{fontFamily:'Georgia',fontSize:'36px',fontStyle:'bold',color:'#2e4a3e'}).setOrigin(.5));
-    this.board.add(this.add.text(480,238,'Ribs, decks, door, window — and pitch on every seam. It passed the rain test.',{fontFamily:'Arial',fontSize:'17px',color:'#42503f',align:'center',wordWrap:{width:680}}).setOrigin(.5));
-    this.board.add(this.add.text(480,282,'Noah built it just as God described in Genesis 6:14–16.',{fontFamily:'Georgia',fontSize:'16px',color:'#7a6749'}).setOrigin(.5));
-    const btn=this.add.text(480,360,'Tell Noah the good news  →',{fontFamily:'Arial',fontSize:'18px',fontStyle:'bold',color:'#fff2cf',backgroundColor:'#35594c',padding:{x:25,y:15}}).setOrigin(.5).setInteractive({useHandCursor:true});
+    this.board.add(text(this,480,180,'The ark is finished!',{fontFamily:'Georgia',fontSize:'36px',fontStyle:'bold',color:'#2e4a3e'}).setOrigin(.5));
+    this.board.add(text(this,480,238,'Ribs, decks, door, window — and pitch on every seam. It passed the rain test.',{fontFamily:'Arial',fontSize:'17px',color:'#42503f',align:'center',wordWrap:{width:680}}).setOrigin(.5));
+    this.board.add(text(this,480,282,'Noah built it just as God described in Genesis 6:14–16.',{fontFamily:'Georgia',fontSize:'16px',color:'#7a6749'}).setOrigin(.5));
+    const btn=text(this,480,360,'Tell Noah the good news  →',{fontFamily:'Arial',fontSize:'18px',fontStyle:'bold',color:'#fff2cf',backgroundColor:'#35594c',padding:{x:25,y:15}}).setOrigin(.5).setInteractive({useHandCursor:true});
     btn.on('pointerdown',()=>this.returnToMeadow());this.board.add(btn);this.addZone(btn,()=>this.returnToMeadow());
     this.app.showHUD('Build the Ark','The ark is finished! Tell Noah the good news.','GENESIS 6:14–16 · BUILDING WITH NOAH');
   }
   leave(){this.returnToMeadow();}
   returnToMeadow(){this.app.router.story(this.story.id,'meet_noah',{x:980,y:550});}
-  ping(x,y,message){this.feedback?.destroy();this.feedback=this.add.text(x,y,message,{fontFamily:'Arial',fontSize:this.phonePortrait?'19px':'14px',fontStyle:'bold',color:'#fff5d8',backgroundColor:'#29483f',padding:{x:10,y:8}}).setOrigin(.5).setDepth(70);this.time.delayedCall(1700,()=>this.feedback?.destroy());}
-  celebrate(x,y){if(this.app.save.settings.reducedMotion)return;for(let i=0;i<24;i++){const angle=i*Math.PI/12,star=this.add.text(x,y,'✦',{fontSize:'18px',color:i%2?'#e8c96f':'#b07d48'}).setOrigin(.5).setDepth(65);this.tweens.add({targets:star,x:x+Math.cos(angle)*115,y:y+Math.sin(angle)*80,alpha:0,scale:.2,duration:700,onComplete:()=>star.destroy()});}}
+  ping(x,y,message){this.feedback?.destroy();this.feedback=text(this,x,y,message,{fontFamily:'Arial',fontSize:this.phonePortrait?'19px':'14px',fontStyle:'bold',color:'#fff5d8',backgroundColor:'#29483f',padding:{x:10,y:8}}).setOrigin(.5).setDepth(70);this.time.delayedCall(1700,()=>this.feedback?.destroy());}
+  celebrate(x,y){if(this.app.save.settings.reducedMotion)return;for(let i=0;i<24;i++){const angle=i*Math.PI/12,star=text(this,x,y,'✦',{fontSize:'18px',color:i%2?'#e8c96f':'#b07d48'}).setOrigin(.5).setDepth(65);this.tweens.add({targets:star,x:x+Math.cos(angle)*115,y:y+Math.sin(angle)*80,alpha:0,scale:.2,duration:700,onComplete:()=>star.destroy()});}}
 }
