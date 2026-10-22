@@ -81,7 +81,7 @@ export class FloodScene extends Phaser.Scene {
     document.getElementById('play').appendChild(el);
     this.controlsEl = el;
     el.querySelector('[data-a="advance"]').onclick = () => this.advanceStorm();
-    el.querySelector('[data-a="forecast"]').onclick = () => { this.forecast = (this.forecast + 1) % 3; this.render(); };
+    el.querySelector('[data-a="forecast"]').onclick = () => { this.forecast = (this.forecast + 1) % 3; this.render(); this.updateHUD(); };
     el.querySelector('[data-a="hint"]').onclick = () => this.useHint();
     el.querySelector('[data-a="reset"]').onclick = () => this.resetStage();
   }
