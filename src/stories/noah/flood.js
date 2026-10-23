@@ -13,6 +13,15 @@
 
 export const WATER = ['LOW', 'RISING', 'HIGH'];
 export const key = (x, y) => `${x},${y}`;
+export const FLOOD_SCRATCH_KEY = 'aaronAdventure.flood.v2';
+
+export function clearFloodScratch(storage) {
+  try {
+    const target = storage ?? globalThis.localStorage;
+    target?.removeItem(FLOOD_SCRATCH_KEY);
+    target?.removeItem('aaronAdventure.flood.v1');
+  } catch { /* storage unavailable */ }
+}
 
 function buildGrid(rows) {
   const cells = new Map();
@@ -36,7 +45,7 @@ function makeStage(def) {
     gaps: new Set([...g.cells].filter(([, c]) => c.gap).map(([k]) => k)),
     initial() {
       return {
-        x: def.start[0], y: def.start[1], water: 0,
+        x: def.start[0], y: def.start[1], water: def.initialWater ?? 0,
         gatesOpen: 0, sluice: false,
         plank: def.plank ? 'rest' : null,           // 'rest' | 'carry' | 'placed'
         plankAt: def.plank ? [...def.plank] : null,  // cell when rest/placed
@@ -49,6 +58,15 @@ function makeStage(def) {
 export function effectiveLevel(stage, s) { return Math.max(0, s.water - (s.sluice ? 1 : 0)); }
 
 export function crateAt(s, x, y) { return s.crates.some(([cx, cy]) => cx === x && cy === y); }
+
+export function canAdvance(stage, s) {
+  if (s.water >= WATER.length - 1) return false;
+  return !stage.advanceAfterCrateAt || crateAt(s, stage.advanceAfterCrateAt[0], stage.advanceAfterCrateAt[1]);
+}
+
+export function isGoal(stage, s) {
+  return s.x === stage.exit[0] && s.y === stage.exit[1] && (stage.exitWater === undefined || s.water >= stage.exitWater);
+}
 
 export function cellInfo(stage, s, x, y) {
   const k = key(x, y), c = stage.cells.get(k);
@@ -86,7 +104,7 @@ export function successors(stage, s) {
   const push = (ns, act) => out.push([ns, act]);
   // Advance the storm: illegal if Aaron's own cell floods (that is a
   // rescue in the game, never a useful solver move).
-  if (s.water < 2) {
+  if (canAdvance(stage, s)) {
     const ns = { ...s, water: s.water + 1 };
     if (standable(stage, ns, s.x, s.y)) push(ns, 'advance');
   }
@@ -119,6 +137,9 @@ export function successors(stage, s) {
       continue;
     }
     if (!standable(stage, s, nx, ny)) continue;
+    // Some lessons intentionally require the water to reach a particular
+    // state before the goal becomes available (Stage 1 teaches forecasting).
+    if (nx === stage.exit[0] && ny === stage.exit[1] && stage.exitWater !== undefined && s.water < stage.exitWater) continue;
     // Ledge cliff: the destination's cliff side facing Aaron blocks entry.
     const ledgeSide = stage.ledges.get(nk);
     if (ledgeSide && ledgeSide === OPP[dn]) continue;
@@ -156,10 +177,9 @@ export function solve(stage, opts = {}) {
 function bfs(stage, start, opts) {
   const seen = new Set([stateKey(stage, start)]);
   const queue = [{ s: start, actions: [] }];
-  const exitK = key(stage.exit[0], stage.exit[1]);
   while (queue.length) {
     const { s, actions } = queue.shift();
-    if (key(s.x, s.y) === exitK) return { actions, states: queue.length };
+    if (isGoal(stage, s)) return { actions, states: queue.length };
     for (const [ns, act] of successors(stage, s)) {
       if (opts.blockCells && opts.blockCells.has(key(ns.x, ns.y)) && !(ns.x === stage.exit[0] && ns.y === stage.exit[1])) continue;
       const k = stateKey(stage, ns);
@@ -214,6 +234,8 @@ export const STAGE1 = makeStage({
     '11111~11111',
   ],
   start: [0, 3], exit: [10, 3],
+  exitWater: 2,
+  advanceAfterCrateAt: [5, 3],
   crates: [[3, 2], [3, 5]],
   checkpoints: [[0, 3]],
 });
@@ -255,8 +277,8 @@ export const STAGE3 = makeStage({
     '221111111122',
     '111111111111',
     '#0200101001#',
-    '#0200100~01#',
-    '#0020101001#',
+    '##2##1##~###',
+    '#0220101001#',
     '111111111111',
     '111111111112',
   ],
@@ -268,3 +290,51 @@ export const STAGE3 = makeStage({
 });
 
 export const STAGES = [STAGE1, STAGE2, STAGE3];
+
+const isPair = value => Array.isArray(value) && value.length === 2 && value.every(Number.isInteger);
+
+// Local scratch storage is deliberately defensive: it is not part of the
+// validated adventure save, and may outlive a deployment or be hand-edited.
+// Return a clean clone only when every field is compatible with this build.
+export function normalizeFloodScratch(raw, flags = {}) {
+  if (!raw || !Number.isInteger(raw.stage) || raw.stage < 0 || raw.stage >= STAGES.length || !raw.s || typeof raw.s !== 'object') return null;
+  if (raw.stage >= 1 && !flags.flood_stage1_done) return null;
+  if (raw.stage >= 2 && !flags.flood_stage2_done) return null;
+  const stage = STAGES[raw.stage], s = raw.s;
+  const maxGateBits = (1 << stage.gates.size) - 1;
+  if (!Number.isInteger(s.x) || !Number.isInteger(s.y) || !Number.isInteger(s.water) || s.water < 0 || s.water >= WATER.length) return null;
+  if (!Number.isInteger(s.gatesOpen) || s.gatesOpen < 0 || (s.gatesOpen & ~maxGateBits) !== 0 || typeof s.sluice !== 'boolean') return null;
+  if (!['rest', 'carry', 'placed', null].includes(s.plank) || !Array.isArray(s.crates) || !s.crates.every(isPair)) return null;
+  const initial = stage.initial();
+  if (s.crates.length !== initial.crates.length) return null;
+  const occupied = new Set();
+  for (const [x, y] of s.crates) {
+    const k = key(x, y), cell = stage.cells.get(k);
+    if (!cell || cell.wall || stage.gateCell.has(k) || occupied.has(k)) return null;
+    occupied.add(k);
+  }
+  if (initial.plank === null) {
+    if (s.plank !== null || s.plankAt !== null) return null;
+  } else if (s.plank === 'carry') {
+    if (s.plankAt !== null) return null;
+  } else if (!isPair(s.plankAt) || !stage.cells.get(key(s.plankAt[0], s.plankAt[1]))) return null;
+  else {
+    const plankCell = stage.cells.get(key(s.plankAt[0], s.plankAt[1]));
+    if (s.plank === 'placed' && !plankCell.gap) return null;
+    if (s.plank === 'rest' && (s.plankAt[0] !== initial.plankAt[0] || s.plankAt[1] !== initial.plankAt[1])) return null;
+  }
+  if (!standable(stage, s, s.x, s.y)) return null;
+  const checkpoint = isPair(raw.checkpoint) ? raw.checkpoint : stage.start;
+  const cpCell = stage.cells.get(key(checkpoint[0], checkpoint[1]));
+  if (!cpCell || cpCell.wall || cpCell.gap) return null;
+  const hintsUsed = Number.isInteger(raw.hintsUsed) && raw.hintsUsed >= 0 && raw.hintsUsed <= 3 ? raw.hintsUsed : 0;
+  return {
+    stage: raw.stage,
+    s: {
+      x: s.x, y: s.y, water: s.water, gatesOpen: s.gatesOpen, sluice: s.sluice,
+      plank: s.plank, plankAt: s.plankAt ? [...s.plankAt] : null,
+      crates: s.crates.map(c => [...c]),
+    },
+    checkpoint: [...checkpoint], hintsUsed, nook: !!raw.nook,
+  };
+}
