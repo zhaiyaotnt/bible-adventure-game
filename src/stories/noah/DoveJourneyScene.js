@@ -167,10 +167,13 @@ export class DoveJourneyScene extends Phaser.Scene {
     this.s = initialFlightState(level);
     this.placeDove(false);
     const cam = this.cameras.main;
-    cam.setBounds(-100, -100, level.world.width + 200, level.world.height + 200);
-    cam.stopFollow();
-    cam.centerOn(this.s.x, this.s.y);
-    cam.startFollow(this.doveImg, true, 0.08, 0.08);
+    // Bounds padded by more than a viewport (the ExploreScene pattern):
+    // with a portrait view taller than these small worlds, tight bounds
+    // clamp the camera away from the dove. The follow itself is manual
+    // (see update) so it can never latch onto the wrong target.
+    cam.setBounds(-700, -500, level.world.width + 1400, level.world.height + 1000);
+    this.camFocus = { x: this.s.x, y: this.s.y };
+    cam.centerOn(this.camFocus.x, this.camFocus.y);
     this.tut = {};
     this.warnedEdge = false;
     this.acc = 0;
@@ -274,7 +277,8 @@ export class DoveJourneyScene extends Phaser.Scene {
     this.s = initialFlightState(this.level);
     this.doveImg.setAlpha(1);
     this.placeDove(false);
-    this.cameras.main.centerOn(this.s.x, this.s.y);
+    this.camFocus = { x: this.s.x, y: this.s.y };
+    this.cameras.main.centerOn(this.camFocus.x, this.camFocus.y);
     this.phase = 'flying';
     this.acc = 0;
     this.lastHud = {};
@@ -347,6 +351,11 @@ export class DoveJourneyScene extends Phaser.Scene {
     }
     this.onFlightEvents(prevExplored, prevObserved, prevLeaf);
     this.placeDove();
+    // manual follow: exponential approach to the dove, then center
+    const kf = 1 - Math.exp(-frameDt * 7);
+    this.camFocus.x += (this.s.x - this.camFocus.x) * kf;
+    this.camFocus.y += (this.s.y - this.camFocus.y) * kf;
+    this.cameras.main.centerOn(this.camFocus.x, this.camFocus.y);
     this.animateWorld(frameDt);
     this.syncHud();
     this.updateObjective();
@@ -511,7 +520,6 @@ export class DoveJourneyScene extends Phaser.Scene {
   landingSequence() {
     this.phase = 'final_transition';
     const cam = this.cameras.main;
-    cam.stopFollow();
     // Assisted glide to the authored branch point; steering is done.
     this.tweens.add({
       targets: this.doveImg, x: BRANCH_POINT.x, y: BRANCH_POINT.y, duration: 1200, ease: 'Sine.easeInOut',
