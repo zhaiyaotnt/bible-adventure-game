@@ -52,9 +52,12 @@ export class FloodScene extends Phaser.Scene {
     this.lastBank = [...this.stage.start];
     this.offX = (960 - this.stage.w * CELL) / 2; this.offY = (640 - this.stage.h * CELL) / 2;
     this.cameras.main.centerOn(480, 320);
+    this.cameras.main.setBackgroundColor(0x44543c);
     const fit = Phaser.Math.Clamp((this.scale.parentSize.width / Math.max(1, this.scale.parentSize.height)) / 1.5, 0.2, 1);
     this.cameras.main.setZoom(fit * renderScale(this));
     this.rain = this.add.rectangle(480, 320, 1600, 1200, 0x274b63, 0).setDepth(40);
+    if (!this.textures.exists('rainstreak')) { const rg = this.add.graphics(); rg.lineStyle(2, 0xcfe4f7, 0.9); rg.lineBetween(3, 0, 0, 14); rg.generateTexture('rainstreak', 4, 16); rg.destroy(); }
+    this.rainFx = this.add.particles(480, 20, 'rainstreak', { emitZone: { source: new Phaser.Geom.Rectangle(-820, -30, 1640, 16) }, speedY: { min: 430, max: 660 }, speedX: { min: -80, max: -45 }, lifespan: { min: 650, max: 1050 }, quantity: 2, frequency: 45, scale: { min: 0.7, max: 1.2 }, alpha: { start: 0.55, end: 0.08 } }).setDepth(41).setVisible(false);
     this.player = this.add.image(0, 0, 'aaron-down-0').setOrigin(.5, .85).setDepth(10).setScale(.35);
     this.buildControls();
     this.render();
@@ -148,35 +151,118 @@ export class FloodScene extends Phaser.Scene {
 
   // ------------------------------------------------------------ rendering
   cellXY(cx, cy) { return { x: this.offX + cx * CELL + CELL / 2, y: this.offY + cy * CELL + CELL / 2 }; }
+  syncRain() { if (this.rainFx) this.rainFx.setVisible((this.s.water === 2 || this.finaleArmed) && !this.app.save.settings.reducedMotion); }
   render() {
     this.boardLayer?.destroy();
+    this.waterTween?.stop(); this.waterTween = null;
     const layer = this.add.container(0, 0).setDepth(0); this.boardLayer = layer;
     const st = this.stage, s = this.s;
+    const hash = (x, y, n) => { let h = (x * 73856093) ^ (y * 19349663) ^ (this.stageIdx * 83492791); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) % n; };
     const fcState = this.forecast ? { ...s, water: Math.min(2, s.water + this.forecast) } : null;
+    const clsAt = (x, y) => (x < 0 || y < 0 || x >= st.w || y >= st.h) ? 'wall' : cellClass(st, s, x, y);
+    // Pass 1 — terrain: continuous ground (no spreadsheet gaps), textured.
+    const g = this.add.graphics(); layer.add(g);
     for (let y = 0; y < st.h; y++) for (let x = 0; x < st.w; x++) {
-      const { x: px, y: py } = this.cellXY(x, y);
+      const X = this.offX + x * CELL, Y = this.offY + y * CELL;
       const info = st.cells.get(cellKey(x, y));
-      let base = 0x6d7a52;
-      if (!info || info.wall) base = 0x4a4f45;
-      else if (info.gap) base = 0x274b63;
-      else base = [0xc2b280, 0x7fae5f, 0xd7e6b0][info.elev] || 0x7fae5f;
-      layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, base));
-      const cls = cellClass(st, s, x, y);
-      if (cls === 'wade') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x5b8fd6, 0.35));
-      if (cls === 'deep') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x2c5f9e, 0.8));
-      if (cls === 'gate') { layer.add(this.add.rectangle(px, py, CELL - 10, CELL - 6, 0x6b6f75).setStrokeStyle(3, 0x3f434a)); layer.add(label(this, px, py, '✕', '#e8e4da', 20)); layer.add(label(this, px, py - 25, 'GATE', '#e8e4da', 11)); }
-      if (cls === 'bridge') layer.add(this.add.rectangle(px, py, CELL - 6, 26, 0x9a6b3f).setStrokeStyle(2, 0x6e4c2e));
-      // Forecast: what this cell becomes in the previewed state.
-      if (fcState) {
-        const fc = cellClass(st, fcState, x, y);
-        if (fc === 'deep' && cls !== 'deep') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x2c5f9e, 0.32));
-        else if (fc === 'wade' && cls === 'dry') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x5b8fd6, 0.15));
+      if (!info || info.wall) {
+        g.fillStyle(0x51564b, 1); g.fillRect(X, Y, CELL, CELL);
+        g.fillStyle(0x6a6f63, 0.5);
+        for (let i = 0; i < 3; i++) g.fillCircle(X + 10 + hash(x + i * 7, y, 44), Y + 10 + hash(x, y + i * 5, 44), 2.5);
+        continue;
+      }
+      if (info.gap) { g.fillStyle(0x8a7a56, 1); g.fillRect(X, Y, CELL, CELL); }
+      else {
+        g.fillStyle([0xb3a077, 0x7fae5f, 0xd8c08d][info.elev], 1); g.fillRect(X, Y, CELL, CELL);
+        if (info.elev === 1) {
+          g.lineStyle(2, 0x5d8a49, 0.8);
+          for (let i = 0; i < 3; i++) { const tx = X + 10 + hash(x + i * 3, y + 1, 42), ty = Y + 14 + hash(x + 2, y + i * 4, 38); g.lineBetween(tx, ty + 5, tx + 2, ty); }
+        } else {
+          g.fillStyle(info.elev === 2 ? 0xbfa26c : 0x9c8a64, 0.55);
+          for (let i = 0; i < 3; i++) g.fillCircle(X + 8 + hash(x + i * 11, y + 3, 46), Y + 8 + hash(x + 5, y + i * 7, 46), 2);
+        }
+        if (info.elev === 2) {
+          const below = st.cells.get(cellKey(x, y + 1));
+          if (!below || below.gap || below.elev < 2) { g.fillStyle(0xa8895a, 1); g.fillRect(X, Y + CELL - 11, CELL, 11); g.fillStyle(0x8a6f42, 1); g.fillRect(X, Y + CELL - 4, CELL, 4); }
+        }
       }
       const ledge = st.ledges.get(cellKey(x, y));
-      if (ledge) layer.add(label(this, px, py + 14, { N: '▲', S: '▼', E: '▶', W: '◀' }[ledge], '#8a6d1f', 15));
-      if (st.switches.has(cellKey(x, y))) { const sw = st.switches.get(cellKey(x, y)); layer.add(this.add.circle(px, py, 13, 0xd9b23a).setStrokeStyle(3, 0x8a6d1f)); layer.add(label(this, px, py, '≡', '#5c4712', 16)); layer.add(label(this, px, py + 26, sw.sluice ? 'DRAIN' : 'SWITCH', '#fff3c4', 11)); }
-      if (st.checkpoints?.some(([cx, cy]) => cx === x && cy === y)) layer.add(label(this, px - 20, py - 20, '⚑', '#b8452e', 16));
+      if (ledge) {
+        g.fillStyle(0x8a6f42, 0.9);
+        if (ledge === 'S') g.fillRect(X, Y + CELL - 8, CELL, 8);
+        if (ledge === 'N') g.fillRect(X, Y, CELL, 8);
+        if (ledge === 'E') g.fillRect(X + CELL - 8, Y, 8, CELL);
+        if (ledge === 'W') g.fillRect(X, Y, 8, CELL);
+      }
+    }
+    // Pass 2 — water (shimmering layer) and built-in stone bridges.
+    const wg = this.add.graphics(); layer.add(wg);
+    const placedAt = s.plank === 'placed' && s.plankAt ? cellKey(s.plankAt[0], s.plankAt[1]) : null;
+    for (let y = 0; y < st.h; y++) for (let x = 0; x < st.w; x++) {
+      const X = this.offX + x * CELL, Y = this.offY + y * CELL;
+      const cls = cellClass(st, s, x, y);
+      if (cls === 'bridge' && placedAt !== cellKey(x, y)) {
+        wg.fillStyle(0x99a0a4, 1); wg.fillRect(X + 4, Y + 15, CELL - 8, 34);
+        wg.fillStyle(0x7d838a, 1); wg.fillRect(X + 4, Y + 43, CELL - 8, 6);
+        wg.lineStyle(2, 0x6f757b, 1); wg.lineBetween(X + 25, Y + 16, X + 25, Y + 48); wg.lineBetween(X + 43, Y + 16, X + 43, Y + 48);
+      }
+      if (cls === 'wade' || cls === 'deep') {
+        const info = st.cells.get(cellKey(x, y));
+        const deep = cls === 'deep';
+        wg.fillStyle(deep ? 0x2a5d9e : 0x6ea9dd, deep ? 0.9 : (info?.gap ? 0.66 : 0.5));
+        wg.fillRect(X, Y, CELL, CELL);
+        wg.lineStyle(2, 0x9fc8ee, 0.35);
+        const o1 = hash(x, y, 18), o2 = hash(x + 9, y + 4, 18);
+        wg.lineBetween(X + 8, Y + 18 + o1, X + 30, Y + 16 + o1); wg.lineBetween(X + 34, Y + 40 + o2, X + 56, Y + 38 + o2);
+        const n = clsAt(x, y - 1);
+        if (n !== 'wade' && n !== 'deep') { wg.lineStyle(2, 0xffffff, 0.3); wg.lineBetween(X + 3, Y + 2, X + CELL - 3, Y + 2); }
+      }
+    }
+    if (!this.app.save.settings.reducedMotion) this.waterTween = this.tweens.add({ targets: wg, alpha: 0.93, duration: 1500, yoyo: true, repeat: -1 });
+    // Pass 3 — forecast ghost water (unchanged semantics, on top of water).
+    if (fcState) for (let y = 0; y < st.h; y++) for (let x = 0; x < st.w; x++) {
+      const { x: px, y: py } = this.cellXY(x, y);
+      const cls = cellClass(st, s, x, y), fc = cellClass(st, fcState, x, y);
+      if (fc === 'deep' && cls !== 'deep') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x2c5f9e, 0.32));
+      else if (fc === 'wade' && cls === 'dry') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x5b8fd6, 0.15));
+    }
+    // Pass 4 — props as drawn objects: barred gates, levers, drain wheel,
+    // checkpoint flags, the goal.
+    const pg = this.add.graphics(); layer.add(pg);
+    for (let y = 0; y < st.h; y++) for (let x = 0; x < st.w; x++) {
+      const { x: px, y: py } = this.cellXY(x, y);
+      const cls = cellClass(st, s, x, y);
+      if (cls === 'gate') {
+        pg.fillStyle(0x767b81, 1); pg.fillRect(px - 27, py - 25, 13, 50); pg.fillRect(px + 14, py - 25, 13, 50);
+        pg.fillStyle(0x5d6167, 1); pg.fillRect(px - 27, py - 25, 13, 7); pg.fillRect(px + 14, py - 25, 13, 7);
+        pg.fillStyle(0x3f434a, 1); for (let b = 0; b < 3; b++) pg.fillRect(px - 15, py - 15 + b * 13, 30, 5);
+        pg.fillStyle(0xd9b23a, 1); pg.fillCircle(px, py - 2, 5);
+        layer.add(label(this, px, py - 38, 'GATE', '#e8e4da', 11));
+      }
+      const ledge = st.ledges.get(cellKey(x, y));
+      if (ledge) layer.add(label(this, px, py + (ledge === 'S' ? 18 : ledge === 'N' ? -18 : 14), { N: '▲', S: '▼', E: '▶', W: '◀' }[ledge], '#8a6d1f', 15));
+      if (st.switches.has(cellKey(x, y))) {
+        const sw = st.switches.get(cellKey(x, y));
+        const on = sw.sluice ? s.sluice : (s.gatesOpen & (1 << Math.max(0, st.gateIds.indexOf(sw.gate)))) !== 0;
+        pg.fillStyle(0x8f9494, 1); pg.fillCircle(px, py, 16); pg.lineStyle(2, 0x5d6167, 1); pg.strokeCircle(px, py, 16);
+        if (sw.sluice) {
+          pg.lineStyle(4, 0xd9b23a, 1); pg.strokeCircle(px, py, 11);
+          for (let a = 0; a < 3; a++) { const t = a * Math.PI / 3 + (on ? Math.PI / 6 : 0); pg.lineStyle(3, 0xd9b23a, 1); pg.lineBetween(px - Math.cos(t) * 10, py - Math.sin(t) * 10, px + Math.cos(t) * 10, py + Math.sin(t) * 10); }
+          pg.fillStyle(0x8a6d1f, 1); pg.fillCircle(px, py, 3.5);
+        } else {
+          pg.fillStyle(0xd9b23a, 1); pg.fillCircle(px, py, 10);
+          const t = on ? 0.9 : -0.9;
+          pg.lineStyle(4, 0x6e4c2e, 1); pg.lineBetween(px, py, px + Math.sin(t) * 15, py - Math.cos(t) * 15);
+          pg.fillStyle(on ? 0x4e9a51 : 0xb8452e, 1); pg.fillCircle(px + Math.sin(t) * 16, py - Math.cos(t) * 16, 4.5);
+        }
+        layer.add(label(this, px, py + 27, sw.sluice ? 'DRAIN' : 'SWITCH', '#fff3c4', 11));
+      }
+      if (st.checkpoints?.some(([cx, cy]) => cx === x && cy === y)) {
+        pg.lineStyle(3, 0x6e4c2e, 1); pg.lineBetween(px - 16, py + 14, px - 16, py - 16);
+        pg.fillStyle(0xb8452e, 1); pg.fillTriangle(px - 16, py - 16, px - 16, py - 5, px - 2, py - 10.5);
+      }
       if (x === st.exit[0] && y === st.exit[1]) {
+        pg.fillStyle(0xf2d38a, 0.18); pg.fillCircle(px, py, 31);
         const glow = this.add.rectangle(px, py, CELL - 8, CELL - 8, 0xf2d38a, 0.55).setStrokeStyle(3, 0xd9a441);
         layer.add(glow);
         if (!this.app.save.settings.reducedMotion) this.tweens.add({ targets: glow, alpha: 0.2, duration: 800, yoyo: true, repeat: -1 });
@@ -185,17 +271,32 @@ export class FloodScene extends Phaser.Scene {
       }
       if (st.nook && x === st.nook[0] && y === st.nook[1] && !this.nookFound) { const sp = sparkle(this, px, py - 6); layer.add(sp); }
     }
+    // Pass 5 — crates and the loose / placed plank.
     for (const [cx, cy] of s.crates) {
       const { x: px, y: py } = this.cellXY(cx, cy);
       layer.add(this.add.rectangle(px, py, 44, 44, 0x9a6b3f).setStrokeStyle(3, 0x6e4c2e));
+      const cg = this.add.graphics(); layer.add(cg);
+      cg.lineStyle(2, 0x6e4c2e, 0.8); cg.lineBetween(px - 20, py - 8, px + 20, py - 8); cg.lineBetween(px - 20, py + 8, px + 20, py + 8);
       layer.add(label(this, px, py, '✕', '#6e4c2e', 18));
+      if (st.cells.get(cellKey(cx, cy))?.gap) {
+        layer.add(this.add.rectangle(px, py + 13, 46, 12, 0x2a5d9e, 0.45));
+        cg.fillStyle(0xffffff, 0.5); cg.fillCircle(px - 14, py + 19, 2); cg.fillCircle(px + 10, py + 20, 2);
+      }
     }
     if (s.plank === 'rest' && s.plankAt) {
       const { x: px, y: py } = this.cellXY(s.plankAt[0], s.plankAt[1]);
       layer.add(this.add.rectangle(px, py + 10, 46, 14, 0xb68a59).setStrokeStyle(2, 0x6e4c2e));
       layer.add(label(this, px, py - 16, 'PLANK', '#fff3c4', 11));
     }
+    if (s.plank === 'placed' && s.plankAt) {
+      const { x: px, y: py } = this.cellXY(s.plankAt[0], s.plankAt[1]);
+      const pg2 = this.add.graphics(); layer.add(pg2);
+      pg2.fillStyle(0xb68a59, 1); pg2.fillRect(px - 30, py - 11, 60, 22);
+      pg2.lineStyle(2, 0x6e4c2e, 1); pg2.strokeRect(px - 30, py - 11, 60, 22); pg2.lineBetween(px - 30, py, px + 30, py);
+      pg2.fillStyle(0x6e4c2e, 1); pg2.fillCircle(px - 24, py - 5, 1.8); pg2.fillCircle(px + 24, py + 5, 1.8);
+    }
     if (s.plank === 'carry') layer.add(label(this, this.cellXY(s.x, s.y).x, this.cellXY(s.x, s.y).y - 34, '🪵', '#fff', 15));
+    this.syncRain();
   }
   placePlayer(animate) {
     const { x, y } = this.cellXY(this.s.x, this.s.y);
@@ -315,6 +416,7 @@ export class FloodScene extends Phaser.Scene {
     this.finaleArmed = true;
     this.app.toast('The storm is rising on its own now — keep moving!');
     this.rain.setAlpha(0.12);
+    this.syncRain();
     this.stormEvent = this.time.addEvent({
       delay: 9000, loop: true, callback: () => {
         if (this.finaleDone || this.busy || this.app.isBlocked()) return;
