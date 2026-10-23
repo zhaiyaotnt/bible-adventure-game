@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { text, renderScale } from '../../scenes/art.js';
+import { BUILD_SCRATCH_KEY, rollStageSetup, normalizeStageSetup } from './buildSetup.js';
 
 const ink = '#273e38';
 const wood = 0xb98453;
@@ -147,6 +148,25 @@ export class ArkBlueprintScene extends Phaser.Scene {
       g.lineStyle(3,0x6e4c2e);g.strokeRect(this.X(-150),this.Y(-252),300*S,56*S);
     }
   }
+  // Per-stage randomized setup (buildSetup.js): rolled while nothing is
+  // placed, locked the moment a piece lands, discarded on completion.
+  stageSetup(stage, placedCount){
+    const doneKey={1:'ark_ribs_done',2:'ark_decks_done',3:'ark_sealed_done'}[stage];
+    let all={};
+    try{all=JSON.parse(localStorage.getItem(BUILD_SCRATCH_KEY)||'{}');}catch{all={};}
+    if(this.flags()[doneKey]){if(all[stage]){delete all[stage];this.saveBuildScratch(all);}return null;}
+    let setup=normalizeStageSetup(stage,all[stage]);
+    if(!setup||(placedCount===0&&!all[stage]?.locked)){
+      setup=rollStageSetup(stage);
+      all[stage]={...setup,locked:placedCount>0};
+      this.saveBuildScratch(all);
+    }else if(placedCount>0&&!all[stage].locked){
+      all[stage].locked=true;this.saveBuildScratch(all);
+    }
+    return setup;
+  }
+  saveBuildScratch(all){try{localStorage.setItem(BUILD_SCRATCH_KEY,JSON.stringify(all));}catch{/* storage unavailable */}}
+
   // ---- Stage 1: keel and ribs (rotate + fit) ----
   drawRibStage(){
     this.stageTitle('1 · Fit the keel and ribs','Turn the two ribs upright with ↻, then fit every piece onto the frame. Strong ribs give the ark its shape.');
@@ -159,12 +179,15 @@ export class ArkBlueprintScene extends Phaser.Scene {
     this.ribTargets={keel:{x:this.X(0),y:this.Y(-6),rotation:0},'rib-a':{x:this.X(-180),y:this.Y(-8),rotation:0},'rib-b':{x:this.X(180),y:this.Y(-8),rotation:0}};
     const starts=this.phonePortrait?[[330,518],[480,533],[630,518]]:[[215,545],[480,560],[745,545]];
     const rows=[['keel','beam_keel_placed'],['rib-a','beam_a_placed'],['rib-b','beam_b_placed']];
-    rows.forEach(([id,flag],i)=>{
+    const setup=this.stageSetup(1,rows.filter(([,flag])=>f[flag]).length)??rollStageSetup(1);
+    rows.forEach(([id,flag])=>{
       const placed=!!f[flag],target=this.ribTargets[id];
-      const rotation=id==='keel'?0:(f[id==='rib-a'?'beam_a_rotated':'beam_b_rotated']?0:Math.PI/2);
+      const start=starts[setup.slots[id]];
+      const rotation=id==='keel'?0:(f[id==='rib-a'?'beam_a_rotated':'beam_b_rotated']?0:setup.angles[id]);
       const piece=id==='keel'
-        ? this.makePiece(id,placed?target.x:starts[i][0],placed?target.y:starts[i][1],560*S,22*S,'plank',placed?0:rotation,'KEEL')
-        : this.makePiece(id,placed?target.x:starts[i][0],placed?target.y:starts[i][1],184*S,100*S,'rib',placed?0:rotation,'RIB');
+        ? this.makePiece(id,placed?target.x:start[0],placed?target.y:start[1],560*S,22*S,'plank',placed?0:rotation,'KEEL')
+        : this.makePiece(id,placed?target.x:start[0],placed?target.y:start[1],184*S,100*S,'rib',placed?0:rotation,'RIB');
+      piece.homeX=start[0];piece.homeY=start[1];
       if(placed){piece.placed=true;piece.disableInteractive();if(piece.arcOffsetY)piece.setPosition(target.x,target.y-piece.arcOffsetY);}
     });
     // Action buttons live under the title, not at the canvas bottom:
@@ -186,21 +209,24 @@ export class ArkBlueprintScene extends Phaser.Scene {
     guide.strokeRect(this.X(-11),this.Y(-92),22*S,58*S);
     guide.strokeRect(this.X(-11),this.Y(-150),22*S,58*S);
     const starts=this.phonePortrait?[[350,520],[430,520],[510,520],[590,520],[660,520]]:[[150,548],[265,548],[420,548],[600,548],[790,548]];
-    const mk=(id,x,y,w,h,kind,label,flag)=>{
+    const deckFlags=['pillar_mid_placed','pillar_up_placed','deck_lower_placed','deck_middle_placed','deck_upper_placed'];
+    const setup=this.stageSetup(2,deckFlags.filter(k=>f[k]).length)??rollStageSetup(2);
+    const mk=(id,w,h,kind,label,flag)=>{
       const placed=!!f[flag];
-      const px=placed?(kind==='pillar'?this.X(0):this.X(0)):x, py=placed?(kind==='pillar'?this.Y(id==='pillar-mid'?-63:-121):this.Y(this.deckLevels[id.replace('deck-','')].y)):y;
+      const [sx,sy]=starts[setup.slots[id]];
+      const px=placed?(kind==='pillar'?this.X(0):this.X(0)):sx, py=placed?(kind==='pillar'?this.Y(id==='pillar-mid'?-63:-121):this.Y(this.deckLevels[id.replace('deck-','')].y)):sy;
       const piece=this.makePiece(id,px,py,w,h,kind,0,label);
       piece.flag=flag;
+      // Remember the tray position so a sagging deck can bounce home.
+      piece.homeX=sx;piece.homeY=sy;
       if(placed){piece.placed=true;piece.disableInteractive();}
       return piece;
     };
-    mk('pillar-mid',starts[0][0],starts[0][1],22*S,58*S,'pillar','POST','pillar_mid_placed');
-    mk('pillar-up',starts[1][0],starts[1][1],22*S,58*S,'pillar','POST','pillar_up_placed');
-    mk('deck-lower',starts[2][0],starts[2][1],this.deckLevels.lower.w*S,24*S,'plank','LOWER · WIDEST','deck_lower_placed');
-    mk('deck-middle',starts[3][0],starts[3][1],this.deckLevels.middle.w*S,24*S,'plank','MIDDLE','deck_middle_placed');
-    mk('deck-upper',starts[4][0],starts[4][1],this.deckLevels.upper.w*S,24*S,'plank','UPPER · NARROWEST','deck_upper_placed');
-    // Remember tray positions so a sagging deck can bounce home.
-    this.pieces.forEach((p,i)=>{if(!p.placed){p.homeX=starts[i][0];p.homeY=starts[i][1];}});
+    mk('pillar-mid',22*S,58*S,'pillar','POST','pillar_mid_placed');
+    mk('pillar-up',22*S,58*S,'pillar','POST','pillar_up_placed');
+    mk('deck-lower',this.deckLevels.lower.w*S,24*S,'plank','LOWER · WIDEST','deck_lower_placed');
+    mk('deck-middle',this.deckLevels.middle.w*S,24*S,'plank','MIDDLE','deck_middle_placed');
+    mk('deck-upper',this.deckLevels.upper.w*S,24*S,'plank','UPPER · NARROWEST','deck_upper_placed');
   }
   // ---- Stage 3: pitch seams, door, window, rain test ----
   drawSealStage(){
@@ -225,10 +251,12 @@ export class ArkBlueprintScene extends Phaser.Scene {
       ['door','door','door_placed',72*S,114*S,'DOOR'],
       ['window','window','window_placed',60*S,34*S,'WINDOW'],
     ];
-    items.forEach(([id,kind,flag,w,h,label],i)=>{
+    const setup=this.stageSetup(3,items.filter(([, ,flag])=>f[flag]).length)??rollStageSetup(3);
+    items.forEach(([id,kind,flag,w,h,label])=>{
       if(f[flag])return;
-      const piece=this.makePiece(id,starts[i][0],starts[i][1],w,h,kind,0,label);
-      piece.flag=flag;piece.homeX=starts[i][0];piece.homeY=starts[i][1];
+      const [sx,sy]=starts[setup.slots[id]];
+      const piece=this.makePiece(id,sx,sy,w,h,kind,0,label);
+      piece.flag=flag;piece.homeX=sx;piece.homeY=sy;
     });
     if(['seam_1_placed','seam_2_placed','seam_3_placed','door_placed','window_placed'].every(k=>f[k]))this.showRainButton();
   }
@@ -265,7 +293,35 @@ export class ArkBlueprintScene extends Phaser.Scene {
     }
     // Beading sparkles on the sealed hull: the pitch is doing its job.
     this.time.delayedCall(900,()=>{for(let i=0;i<10;i++){const sx=this.X(-260+i*58),sy=this.Y(-60-(i%3)*44);const s=text(this,sx,sy,'✦',{fontSize:'15px',color:'#fff3b0'}).setOrigin(.5).setDepth(61);this.tweens.add({targets:s,alpha:0,y:sy-14,duration:800,onComplete:()=>s.destroy()});}});
-    this.time.delayedCall(2100,()=>{cloud.destroy();this.raining=false;this.finishSealing();});
+    // …but a few seams still weep — at random spots every time. The test
+    // only passes once Aaron has patched every leak by tapping it.
+    this.leakCloud=cloud;
+    this.time.delayedCall(1100,()=>this.spawnLeaks());
+  }
+  spawnLeaks(){
+    const order=[0,1,2].sort(()=>Math.random()-.5);
+    const count=Math.random()<.5?2:3;
+    this.leaks=[];
+    this.ping(480,this.phonePortrait?246:232,'Leaks! Tap each 💧 to patch it with pitch.');
+    for(let i=0;i<count;i++){
+      const lx=this.X(-240+Math.random()*480),ly=this.Y(this.seamY[order[i]]);
+      const leak=text(this,lx,ly,'💧',{fontSize:'27px'}).setOrigin(.5).setDepth(62).setInteractive({useHandCursor:true});
+      this.tweens.add({targets:leak,y:ly+7,duration:380,yoyo:true,repeat:-1});
+      leak.on('pointerdown',()=>this.patchLeak(leak));
+      this.board.add(leak);
+      this.leaks.push(leak);
+    }
+  }
+  patchLeak(leak){
+    if(!this.leaks?.includes(leak))return;
+    this.leaks=this.leaks.filter(l=>l!==leak);
+    this.tweens.killTweensOf(leak);leak.destroy();
+    if(this.leaks.length===0){
+      const cloud=this.leakCloud;this.leakCloud=null;
+      this.time.delayedCall(650,()=>{cloud?.destroy();this.raining=false;this.finishSealing();});
+    } else {
+      this.ping(480,this.phonePortrait?246:232,`${this.leaks.length} leak${this.leaks.length>1?'s':''} left…`);
+    }
   }
   // ---- Pieces ----
   makePiece(id,x,y,w,h,kind,rotation=0,label=''){
@@ -336,6 +392,11 @@ export class ArkBlueprintScene extends Phaser.Scene {
     (this.zones??=[]).push({left:btn.x-btn.originX*w,top:btn.y-btn.originY*h,right:btn.x+(1-btn.originX)*w,bottom:btn.y+(1-btn.originY)*h,action});
   }
   pickAt(pointer){
+    // During the rain test the only live targets are the leaks (zones
+    // and pieces stay frozen until every leak is patched).
+    if(this.raining&&this.leaks?.length){
+      for(const leak of [...this.leaks])if(Math.abs(pointer.worldX-leak.x)<36&&Math.abs(pointer.worldY-leak.y)<36){this.patchLeak(leak);return;}
+    }
     if(this.app.isBlocked()||this.raining)return;
     for(const z of this.zones??[])if(pointer.worldX>=z.left&&pointer.worldX<=z.right&&pointer.worldY>=z.top&&pointer.worldY<=z.bottom){z.action();return;}
     for(const piece of [...this.pieces].reverse()){
@@ -392,8 +453,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
         this.time.delayedCall(750,()=>{this.stage=2;this.visualStage=2;this.drawStage();this.updateHUD();});
       }
     } else {
-      const starts=this.phonePortrait?[[330,518],[480,533],[630,518]]:[[215,545],[480,560],[745,545]];
-      piece.setPosition(...starts[['keel','rib-a','rib-b'].indexOf(piece.id)]);
+      piece.setPosition(piece.homeX,piece.homeY);
       this.ping(piece.x,piece.y-56,piece.kind==='rib'&&angleOff>=.3?'Turn the rib upright first (↻).':'Look for the outline that fits.');
     }
   }

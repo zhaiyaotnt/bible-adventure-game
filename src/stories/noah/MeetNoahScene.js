@@ -2,6 +2,7 @@ import { ExploreScene } from '../../scenes/ExploreScene.js';
 import Phaser from 'phaser';
 import { character, label, text } from '../../scenes/art.js';
 import { addItem, hasItems, inventoryCount } from '../../core/Inventory.js';
+import { SUPPLY_SCRATCH_KEY, chooseSupplySpots, spotsFromRoll, clearSupplyScratch } from './supplySpots.js';
 import meadow from '../../assets/noah-meadow-concept.jpg';
 import meadowStage0 from '../../assets/noah-meadow-stage0.jpg';
 import meadowStage1 from '../../assets/noah-meadow-stage1.jpg';
@@ -164,21 +165,23 @@ export class MeetNoahScene extends ExploreScene {
     if(this.flags().log_moved){this.logMoved=true;this.log.setY(y-82);this.logWall.setTo(this.log.x-50,this.log.y-16,100,32);this.hiddenWood.setVisible(true);this.hiddenSpark.setVisible(true);}
   }
   drawMaterials(){
-    const wood1=this.woodPile(590,730),wood2=this.woodPile(905,645),wood3=this.add.container(900,865).setDepth(867).setScale(1.3).setVisible(false);
+    const sp=Object.fromEntries(this.materialSpots().map(s=>[s.key,s]));
+    const wood1=this.woodPile(sp.wood_1.x,sp.wood_1.y),wood2=this.woodPile(sp.wood_2.x,sp.wood_2.y),wood3=this.add.container(900,865).setDepth(867).setScale(1.3).setVisible(false);
     wood3.add(this.add.ellipse(0,10,45,12,0x334a35,.25));wood3.add(this.add.rectangle(-7,0,36,11,0x9b7048).setAngle(14));wood3.add(this.add.rectangle(12,-8,28,10,0xb68a59).setAngle(-13));
 
-    const rope1=this.ropeCoil(1120,660),rope2=this.ropeCoil(1370,790);
+    const rope1=this.ropeCoil(sp.rope_1.x,sp.rope_1.y),rope2=this.ropeCoil(sp.rope_2.x,sp.rope_2.y);
 
-    const jar=this.add.container(1070,875).setDepth(876).setScale(1.3);
+    const jar=this.add.container(sp.pitch.x,sp.pitch.y).setDepth(sp.pitch.y+1).setScale(1.3);
     jar.add(this.add.ellipse(0,15,36,10,0x334a35,.3));
     jar.add(this.add.rectangle(0,0,23,29,0x9d7250).setStrokeStyle(2,0x654b37));
     jar.add(this.add.rectangle(0,-17,11,7,0x72533b));jar.add(this.add.rectangle(0,-13,18,3,0xd0ad69));
     jar.add(this.add.rectangle(0,1,13,12,0xc29a61));
-    const hammer=this.add.container(680,890).setDepth(891).setScale(1.3);
+    const hammer=this.add.container(sp.tool_1.x,sp.tool_1.y).setDepth(sp.tool_1.y+1).setScale(1.3);
     hammer.add(this.add.ellipse(0,12,36,10,0x334a35,.3));hammer.add(this.add.rectangle(0,1,5,27,0x986f47).setAngle(-20));
     hammer.add(this.add.rectangle(2,-11,22,8,0x777767).setAngle(-20));hammer.add(this.add.rectangle(-7,-11,8,13,0x777767).setAngle(-20));
     // A warm pulse and small glint make each quest prop legible against the grass.
-    for(const [x,y] of [[590,730],[905,645],[1120,660],[1370,790],[1070,875],[680,890]]){
+    for(const key of ['wood_1','wood_2','rope_1','rope_2','pitch','tool_1']){
+      const {x,y}=sp[key];
       const glint=text(this,x+20,y-22,'✦',{fontSize:'14px',color:'#fff0ad'}).setOrigin(.5).setDepth(y+20);
       if(!this.app.save.settings.reducedMotion)this.tweens.add({targets:glint,y:y-28,alpha:.35,duration:800,yoyo:true,repeat:-1});
     }
@@ -186,15 +189,22 @@ export class MeetNoahScene extends ExploreScene {
   }
   woodPile(x,y){const pile=this.add.container(x,y).setDepth(y).setScale(1.3);pile.add(this.add.ellipse(0,11,52,12,0x334a35,.28));for(let i=0;i<3;i++){pile.add(this.add.rectangle((i-1)*8,(i%2)*6,42,10,i%2?0x9b7048:0xb08454).setAngle(i*11-10));}return pile;}
   ropeCoil(x,y){const rope=this.add.container(x,y).setDepth(y).setScale(1.3);rope.add(this.add.ellipse(0,11,39,10,0x334a35,.28));const coil=this.add.graphics();coil.lineStyle(4,0xc79a59,1).strokeCircle(-3,0,12).strokeCircle(3,0,8).strokeCircle(0,0,4);rope.add(coil);rope.add(this.add.arc(12,3,10,20,230,false,0xc79a59).setStrokeStyle(3,0xc79a59));return rope;}
-  materialSpots(){return [
-    {key:'wood_1',item:'wood',x:590,y:730,name:'Gather wood by the path'},
-    {key:'wood_2',item:'wood',x:905,y:645,name:'Search the forest clearing'},
-    {key:'wood_3',item:'wood',x:900,y:865,name:'Collect wood behind the fallen log',hidden:true},
-    {key:'rope_1',item:'rope',x:1120,y:660,name:'Gather rope by the riverbank'},
-    {key:'rope_2',item:'rope',x:1370,y:790,name:'Search the far riverbank'},
-    {key:'tool_1',item:'tool',x:680,y:890,name:'Find the construction hammer'},
-    {key:'pitch',item:'pitch',x:1070,y:875,name:'Pick up the jar of pitch'}
-  ];}
+  // Supply spots are rolled once per supply quest (one candidate per
+  // item from supplySpots.js pools) and persisted, so the hunt differs
+  // between adventures but never reshuffles mid-quest.
+  materialSpots(){
+    if(this._spots)return this._spots;
+    let roll=null;
+    try{roll=JSON.parse(localStorage.getItem(SUPPLY_SCRATCH_KEY)||'null');}catch{roll=null;}
+    let spots=spotsFromRoll(roll);
+    if(!spots){
+      const chosen=chooseSupplySpots();
+      spots=spotsFromRoll(chosen);
+      try{localStorage.setItem(SUPPLY_SCRATCH_KEY,JSON.stringify(chosen));}catch{/* storage unavailable */}
+    }
+    this._spots=spots;
+    return spots;
+  }
   collect(item){
     const f=this.flags();
     if(!f.met_noah){this.app.dialogue('A useful discovery',this.story.content.before_noah,{fiction:false,reference:this.story.content.reference});return;}
@@ -204,7 +214,7 @@ export class MeetNoahScene extends ExploreScene {
     this.materialArt?.[item.key]?.setAlpha(.34);
     f[item.key]=true;if(item.item==='pitch')f.pitch_taken=true;
     const amount=addItem(this.inventory(),item.item);this.app.persist();this.showFeedback(`✦  ${item.item==='wood'?'Wood':item.item==='rope'?'Rope':item.item==='pitch'?'Pitch':'Hammer'} collected · ${amount}`);
-    if(hasItems(this.inventory(),{wood:3,rope:2,tool:1,pitch:1})){f.supply_quest_complete=true;this.app.persist();this.burst(this.player.x,this.player.y);this.app.dialogue('Supplies gathered!',this.story.content.materials_complete,{fiction:true,reference:'Genesis 6:14–16'});}
+    if(hasItems(this.inventory(),{wood:3,rope:2,tool:1,pitch:1})){f.supply_quest_complete=true;clearSupplyScratch();this.app.persist();this.burst(this.player.x,this.player.y);this.app.dialogue('Supplies gathered!',this.story.content.materials_complete,{fiction:true,reference:'Genesis 6:14–16'});}
     this.updateObjective();
   }
   talkNoah(){
