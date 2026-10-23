@@ -493,7 +493,6 @@ export class DoveJourneyScene extends Phaser.Scene {
     }
     const f = this.flags();
     f[`dove_flight${this.flightIdx + 1}_done`] = true;
-    if (this.flightIdx === 2) f.dove_complete = true;
     this.app.persist();
     if (this.flightIdx === 0) {
       this.app.dialogue('Noah', this.content('dove_flight1_return'), { fiction: false, reference: 'Genesis 8:9', onComplete: () => this.sevenDays('dove_seven_days_1') });
@@ -536,7 +535,7 @@ export class DoveJourneyScene extends Phaser.Scene {
             fiction: false, reference: 'Genesis 8:15–19',
             onComplete: () => this.app.dialogue('Guide', this.content('dove_offering'), {
               fiction: false, reference: 'Genesis 8:20–22',
-              onComplete: () => this.covenantModal(),
+              onComplete: () => this.handoffModal(),
             }),
           }),
         }),
@@ -544,29 +543,14 @@ export class DoveJourneyScene extends Phaser.Scene {
     });
   }
 
-  covenantModal() {
-    const lines = this.content('dove_covenant').map(l => `<p class="reading">${l}</p>`).join('');
-    const rainbow = `<svg viewBox="0 0 300 130" style="width:100%"><path d="M20 125 A130 130 0 0 1 280 125" fill="none" stroke="#e86a5a" stroke-width="11"/><path d="M38 125 A112 112 0 0 1 262 125" fill="none" stroke="#f2a541" stroke-width="11"/><path d="M56 125 A94 94 0 0 1 244 125" fill="none" stroke="#f2d38a" stroke-width="11"/><path d="M74 125 A76 76 0 0 1 226 125" fill="none" stroke="#7fae5f" stroke-width="11"/><path d="M92 125 A58 58 0 0 1 208 125" fill="none" stroke="#5b8fd6" stroke-width="11"/></svg>`;
-    this.app.openModal(`<p class="overline">GENESIS 9:8–17</p><h2>The Covenant Sign</h2>${rainbow}${lines}<button id="dove-cov-next" class="primary">Continue →</button>`, 'reading');
-    document.getElementById('dove-cov-next').onclick = () => { this.app.closeModal(); this.reflectionModal(); };
-  }
-
-  reflectionModal() {
-    this.app.openModal(`<p class="overline">BIBLE DISCOVERY · GENESIS 8–9</p><h2>God Remembers, God Keeps His Promise</h2>
-      <p class="reading">🌈 God <b>remembered</b> Noah and every living thing with him in the ark — He was never forgotten, even in the long months on the water.</p>
-      <p class="reading">🕊 The dove brought back evidence that the waters were going down — yet Noah still <b>waited</b> until God Himself told him to come out.</p>
-      <p class="reading">✝️ God's covenant was with Noah, his descendants, and <b>every living creature</b>. The rainbow in the clouds is the sign of that promise.</p>
-      <p class="reading">The dove's routes, winds and resting places in this game are imagined — the waiting, the leaf, and the promise are Scripture's own.</p>
-      <button id="dove-finish" class="primary">Complete Noah's chapter →</button>`, 'reading');
-    document.getElementById('dove-finish').onclick = () => {
-      const save = this.app.save, st = save.stories[this.story.id];
-      if (!st.completedScenes.includes('doves_journey')) st.completedScenes.push('doves_journey');
-      if (!save.mementos.includes('doves_journey_illustration')) save.mementos.push('doves_journey_illustration');
-      if (!save.badges.includes('rainbow_covenant')) save.badges.push('rainbow_covenant');
-      st.status = 'completed';
-      this.app.persist();
-      this.app.closeModal();
-      this.app.router.story(this.story.id, 'meet_noah');
+  handoffModal() {
+    this.app.openModal(`<p class="overline">GENESIS 8:20–22</p><h2>The story continues</h2><p class="reading">Noah has left the ark and worshiped God. This dove journey is an imagined activity; the covenant and its sign come next in the biblical story.</p><button id="dove-handoff" class="primary">Continue to the sunlit valley →</button>`, 'reading');
+    document.getElementById('dove-handoff').onclick = () => {
+      const save=this.app.save,st=save.stories[this.story.id];st.questFlags.dove_complete=true;
+      if(!st.completedScenes.includes('doves_journey'))st.completedScenes.push('doves_journey');
+      if(!save.mementos.includes('doves_journey_illustration'))save.mementos.push('doves_journey_illustration');
+      this.app.persist();this.app.closeModal();this.app.router.story(this.story.id,'meet_noah');
     };
   }
+
 }

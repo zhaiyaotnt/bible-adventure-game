@@ -36,7 +36,7 @@ Each flight uses the same four-beat structure:
 3. Immediate story-specific outcome: return, leaf return, or landing.
 4. A brief seven-day transition before the next flight.
 
-After Flight 3, show the later sequence in the correct order: Noah waits for God's command, leaves the ark, worships, and only then receives the covenant sign.
+After Flight 3, show the later sequence through Noah's offering: Noah waits for God's command, leaves the ark, and worships (Genesis 8:12–22). Game 5 then hands off to the fictional light garden. Game 6 alone presents God's covenant and its sign.
 
 ### Interaction thesis
 
@@ -557,7 +557,7 @@ On completion:
 
 Do not persist mid-flight position. Resume at the first unfinished flight; the longest lost progress is only one short flight.
 
-Add these content keys to `noah.json` rather than hard-coding major narrative copy in the scene:
+Add these content keys to `noah.json` rather than hard-coding major narrative copy in the scene. `dove_covenant` remains only for compatibility with older saves/builds and must no longer be called:
 
 ```text
 dove_invite
@@ -585,13 +585,13 @@ Required canonical sequence:
 5. The dove does not return (Genesis 8:12).
 6. Noah still waits for God's instruction to leave (Genesis 8:15–19).
 7. Noah builds an altar and worships (Genesis 8:20–22).
-8. God establishes the covenant and gives the rainbow as its sign (Genesis 9:8–17).
+8. Game 5 ends after the offering; Game 6 presents God's covenant and the rainbow sign (Genesis 9:8–17).
 
 Every flight briefing or reflection that discusses authored routes/wind must include a concise fiction label. Do not present the game's geography, stamina, weather routes, or olive-tree location as details recorded by Scripture.
 
 ---
 
-## 13. Ending and reflection screen
+## 13. Ending and handoff
 
 After Flight 3, use short dialogue/crossfades rather than another playable task:
 
@@ -599,21 +599,11 @@ After Flight 3, use short dialogue/crossfades rather than another playable task:
 2. Fade back to ark interior/exterior and state that Noah continued to wait.
 3. God's instruction to leave is summarized with Genesis 8:15–19 reference.
 4. Show Noah's offering with Genesis 8:20–22 reference.
-5. Only then reveal the rainbow/covenant image.
+5. Show a short handoff panel after Noah's offering. Do not show a rainbow, covenant reflection, chapter-complete message, or Game 6 reward here.
 
-Reflection title:
+Primary CTA: `Continue to the sunlit valley →`
 
-> God Remembers, God Keeps His Promise
-
-Reflection points:
-
-- God remembered Noah and every living thing with him.
-- The dove gave evidence that the waters were receding, but Noah still waited for God's direction.
-- God's covenant was with Noah, his descendants, and every living creature; the rainbow is the sign of that promise.
-
-Primary CTA: `Complete Noah's chapter →`
-
-Optional secondary buttons may open short summarized references for Genesis 8:1, 8:8–12, 8:15–22, and 9:8–17. Do not quote an unidentified Bible translation at length.
+The CTA returns to Noah's meadow. When `dove_complete && !prism_complete`, Noah's meadow invites Aaron into Game 6. Game 6 owns the covenant reveal, reflection, badge, and chapter completion. Keep the old `dove_covenant` and reflection content keys during migration, but stop calling them.
 
 ---
 
@@ -765,7 +755,8 @@ Use the bundled Codex Node runtime if `/usr/local/bin/node` reports a CPU archit
 - [ ] Reload resumes the first unfinished flight.
 - [ ] Replay does not duplicate rewards.
 - [ ] Ark motion is environmental only; the player does not steer it.
-- [ ] Rainbow appears only after leaving the ark and Noah's offering.
+- [ ] Game 5 ends after Noah's offering and shows no rainbow before Game 6.
+- [ ] Game 5 awards only `doves_journey_illustration`; it does not set story status to completed or award `rainbow_covenant`.
 - [ ] Fictional wind/geography is clearly labeled.
 - [ ] All tests and production build pass.
 - [ ] No console errors, orphan DOM controls, timers, particles, or repeating tweens remain after scene exit.

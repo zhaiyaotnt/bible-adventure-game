@@ -15,7 +15,8 @@
     "ark_blueprint",
     "ark_interior",
     "rising_flood",
-    "doves_journey"
+    "doves_journey",
+    "rainbow_prism"
   ],
   "published": true,
   "subtitle": "Explore Noah’s camp, gather supplies, and help build the ark.",
@@ -185,8 +186,46 @@
       "Whenever the rainbow appears in the clouds, God remembers His promise. And so do we."
     ],
     "dove_done": [
-      "The ark is empty, the altar is built, and the rainbow is in the sky. You guided the dove well, Aaron — and you learned to wait with Noah.",
-      "Noah's chapter is complete. If you would like to fly with the dove again, just say the word."
-    ]
+      "The ark is empty, and Noah has worshiped God. You guided the dove well, Aaron — and you learned to wait with Noah.",
+      "The story continues in the sunlit valley. The dove's journey is complete; its rewards are saved."
+    ],
+    "prism_invite": [
+      "Noah and the living creatures have left the ark, and Noah has worshiped God. Come explore an imagined light garden in the sunlit valley.",
+      "This light garden is an imagined learning activity. Genesis does not describe Aaron or these optical devices. The puzzle will help us observe simple paths of light; it does not make God's covenant sign."
+    ],
+    "prism_opening": [
+      "The rain has passed, and sunlight is returning to the valley. This light garden is an imagined learning activity. Genesis does not describe Aaron or these optical devices.",
+      "Guide the white light through mirrors, a clear prism, and mist. This puzzle can explore color, but it cannot create God's covenant sign."
+    ],
+    "prism_stage1_intro": [
+      "Find the Light. Turn the two water-polished mirrors to guide the bright path around the stone wall and into the mist. Select a mirror, then choose Rotate."
+    ],
+    "prism_stage1_done": ["The light found its way around the wall. Next, the prism will split white light into three gameplay color groups."] ,
+    "prism_stage2_intro": [
+      "Three Color Groups. The clear prism sends red, green, and blue paths in different directions. Charge each receiver; a charged receiver stays lit while you move the shared mirror and blocker."
+    ],
+    "prism_stage2_done": ["Each color group reached its receiver. The last board links light paths to shutters, so the paths must work together at the same time."] ,
+    "prism_stage3_intro": [
+      "The Rainbow Bridge. Place the control mirror to light the upper receiver. Its relay opens the first shutter; green light then powers the second shutter while red, green, and blue mist zones stay lit together."
+    ],
+    "prism_stage3_done": ["All three mist zones are lit at once. The small spectrum belongs only to this imagined puzzle. The covenant sign in the biblical story is God's action, in a separate scene."] ,
+    "prism_science_note": "This puzzle simplifies light into paths on a grid and three gameplay color groups. It treats mirrors as right-angle turns and a clear prism as a device that separates the paths; real light behaves in more detailed ways. Real rainbows form when sunlight is refracted as it enters water droplets, internally reflected inside them, and dispersed into colors as it leaves. The game’s red, green, and blue channels are useful for planning the puzzle, but they are not a complete model of the colors in a real rainbow.",
+    "prism_return_to_noah": ["Let’s leave the imagined light garden and return to Noah, who has already left the ark and worshiped God."] ,
+    "prism_covenant": [
+      "God made a covenant with Noah, his descendants, and every living creature. God said that never again would a flood destroy all life on the earth.",
+      "God appointed the rainbow in the clouds as the sign of this covenant. Noah did not make the promise happen; God began it and gave its sign. (Genesis 9:8–17, summarized)"
+    ],
+    "prism_reflection": {
+      "title": "A Promise That Endures",
+      "verse": "Genesis 9:8–17",
+      "truths": [
+        "God initiates the covenant with Noah, Noah’s descendants, and every living creature.",
+        "God is faithful to his word.",
+        "The rainbow is God’s appointed sign that never again will a flood destroy all flesh. This promise does not mean local floods never occur."
+      ],
+      "question": "Why is it important that the promise comes from God rather than from something Noah accomplished?",
+      "science": "Science describes how sunlight and water droplets can produce a rainbow. Genesis gives the rainbow covenant meaning as the sign God appoints."
+    },
+    "prism_done": ["God's covenant with Noah and every living creature is the heart of this chapter. You can revisit the reflection or explore the imagined light puzzles again."]
   }
 }

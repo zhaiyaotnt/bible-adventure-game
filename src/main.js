@@ -11,11 +11,13 @@ import { ArkBlueprintScene } from './stories/noah/ArkBlueprintScene.js';
 import { ArkInteriorScene } from './stories/noah/ArkInteriorScene.js';
 import { FloodScene } from './stories/noah/FloodScene.js';
 import { DoveJourneyScene } from './stories/noah/DoveJourneyScene.js';
+import { RainbowPrismScene } from './stories/noah/RainbowPrismScene.js';
+import { clearPrismScratch } from './stories/noah/prism.js';
 const $=id=>document.getElementById(id);
 const escape=text=>String(text).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 class BootScene extends Phaser.Scene {
   constructor(){super('Boot');}
-  create(){ $('loading').hidden=true; app.game=this.game; this.game.registry.set('app',app); app.router=new SceneRouter(app,{'noahs_ark/meet_noah':'MeetNoah','noahs_ark/ark_blueprint':'ArkBlueprint','noahs_ark/ark_interior':'ArkInterior','noahs_ark/rising_flood':'Flood','noahs_ark/doves_journey':'DoveJourney'}); this.scene.start('HomeBase'); app.menu(); }
+  create(){ $('loading').hidden=true; app.game=this.game; this.game.registry.set('app',app); app.router=new SceneRouter(app,{'noahs_ark/meet_noah':'MeetNoah','noahs_ark/ark_blueprint':'ArkBlueprint','noahs_ark/ark_interior':'ArkInterior','noahs_ark/rising_flood':'Flood','noahs_ark/doves_journey':'DoveJourney','noahs_ark/rainbow_prism':'RainbowPrism'}); this.scene.start('HomeBase'); app.menu(); }
 }
 const app={
   registry:new StoryRegistry(manifests), input:new InputManager(), save:newSave(), saved:null, modal:null, talking:false, game:null,
@@ -34,7 +36,7 @@ const app={
     $('new').onclick=()=>{if(this.saved)this.confirm('Start a new adventure?','This replaces your current progress. Export a backup in Settings if you want to keep it.',()=>this.newAdventure());else this.newAdventure();};
     $('menu-settings').onclick=()=>this.settings('menu');
   },
-  newAdventure(){const settings=this.save.settings;this.save=newSave();this.save.settings=settings;try{localStorage.removeItem('aaronAdventure.supplies.v1');localStorage.removeItem('aaronAdventure.build.v1');}catch{}this.router.home();this.toast('Welcome, Aaron! Walk to the glowing Bible Timeline.');},
+  newAdventure(){const settings=this.save.settings;clearPrismScratch(storage);this.save=newSave();this.save.settings=settings;try{localStorage.removeItem('aaronAdventure.supplies.v1');localStorage.removeItem('aaronAdventure.build.v1');}catch{}this.router.home();this.toast('Welcome, Aaron! Walk to the glowing Bible Timeline.');},
   timeline(){
     this.openModal(`<div class="panel-head"><div><p class="overline">TRAVEL THROUGH THE STORIES</p><h2>The Bible Timeline</h2></div><button id="close-timeline" class="close" aria-label="Close timeline">×</button></div><p class="muted">Every story is part of a bigger story. Where will you begin?</p><div class="timeline-list">${this.registry.timeline().map((s,i)=>`<div class="timeline-row ${s.published?'available':''}"><div class="timeline-index">${String(i+1).padStart(2,'0')}</div><div><span class="overline">${escape(s.era)} · ${escape(s.bibleReferences.join(', '))}</span><h3>${escape(s.title)}</h3><p>${escape(s.subtitle)}</p>${s.published?`<small>${escape(s.releaseNote)}${this.save.stories[s.id]?.completedScenes.includes(s.entryScene)?' · Chapter explored ✓':''}</small>`:''}</div>${s.published?`<button class="primary story-enter" data-story="${escape(s.id)}">Explore <span>→</span></button>`:'<span class="coming">Coming soon</span>'}</div>`).join('')}</div><p class="footnote">Published stories can be explored independently. More adventures are on their way.</p>`,'timeline');
     $('close-timeline').onclick=()=>this.closeModal();for(const b of document.querySelectorAll('.story-enter'))b.onclick=()=>this.router.story(b.dataset.story);
@@ -60,7 +62,7 @@ const app={
     $('reduced').onchange=e=>{this.save.settings.reducedMotion=e.target.checked;this.applySettings();if(this.saved)this.persist();const scene=this.game.scene.getScenes(true)[0];scene?.tweens.getAllTweens().forEach(t=>e.target.checked?t.pause():t.resume());};
     $('export').onclick=()=>{const blob=new Blob([JSON.stringify(this.save,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='aaron-adventure-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
     $('import').onclick=()=>$('import-save').click();
-    $('reset').onclick=()=>this.confirm('Reset all progress?','This clears your story progress on this browser. Export a backup first if you want to keep it.',()=>{this.save=newSave();this.persist();this.router.home();this.menu();});
+    $('reset').onclick=()=>this.confirm('Reset all progress?','This clears your story progress on this browser. Export a backup first if you want to keep it.',()=>{clearPrismScratch(storage);this.save=newSave();this.persist();this.router.home();this.menu();});
   },
   applySettings(){document.documentElement.classList.toggle('reduced-motion',!!this.save.settings.reducedMotion);},
   help(){this.openModal(`<div class="panel-head"><div><p class="overline">A LITTLE HELP</p><h2>Follow your curiosity.</h2></div><button id="close-help" class="close" aria-label="Close help">×</button></div><p class="reading">On a phone, <b>tap the world</b> and Aaron walks there — or <b>press and drag</b> and he follows your finger in any direction. On a keyboard, use <b>WASD or the arrow keys</b>. Walk close to a person or object, then press <b>E, Space, Enter</b> or tap <b>Explore</b>. The view follows Aaron as he walks. <b>Pinch with two fingers</b> (or use the mouse wheel) to zoom in and out.</p><p class="reading">In your room, walk to the glowing portal. In Noah’s meadow, talk to Noah and inspect the ark at the top of the ramp.</p><p class="save-note">${escape($('objective').textContent)}</p><p class="footnote">Escape opens the menu or closes a panel. There are no time limits.</p>`,'help');$('close-help').onclick=()=>this.closeModal();}
@@ -69,7 +71,7 @@ const app={
 let storage;try{storage=window.localStorage;}catch{storage={getItem(){throw Error();},setItem(){throw Error();}};}
 app.saves=new SaveManager(storage,message=>app.toast(message));app.saved=app.saves.load();if(app.saved)app.save=structuredClone(app.saved);app.applySettings();
 $('brand').onclick=e=>{e.preventDefault();app.menu();};$('settings').onclick=()=>app.settings(app.modal==='menu'?'menu':null);$('help').onclick=()=>app.help();$('home').onclick=()=>app.router.home();$('touch-interact').onclick=()=>{if(!app.isBlocked())app.game.scene.getScenes(true)[0]?.interact?.();};
-$('import-save').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>100000)throw Error('Save files must be smaller than 100 KB.');const save=app.saves.parse(await file.text());app.save=save;app.applySettings();app.persist();app.router.resume();app.toast('Your adventure has been restored.');}catch(error){app.toast(`Could not import: ${error.message}`);}e.target.value='';};
+$('import-save').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>100000)throw Error('Save files must be smaller than 100 KB.');const save=app.saves.parse(await file.text());clearPrismScratch(storage);app.save=save;app.applySettings();app.persist();app.router.resume();app.toast('Your adventure has been restored.');}catch(error){app.toast(`Could not import: ${error.message}`);}e.target.value='';};
 document.addEventListener('keydown',e=>{
   if(app.talking&&['Enter',' ','e','E'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();app.advanceDialogue();}
   else if(app.modal&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();app.dismiss();}
@@ -88,4 +90,4 @@ window.addEventListener('blur',()=>{if(app.saved)app.persist();});document.addEv
 // antialiasing + hi-res text textures) iOS Safari killed the page
 // process for memory ("A problem repeatedly occurred", 2026-10-21).
 const RENDER_SCALE=Math.min(window.devicePixelRatio||1,2);
-new Phaser.Game({type:Phaser.AUTO,parent:'game',width:960*RENDER_SCALE,height:640*RENDER_SCALE,backgroundColor:'#203a37',pixelArt:false,roundPixels:false,scale:{mode:Phaser.Scale.ENVELOP,autoCenter:Phaser.Scale.CENTER_BOTH},input:{keyboard:{capture:[32,37,38,39,40]}},scene:[BootScene,HomeBaseScene,MeetNoahScene,ArkBlueprintScene,ArkInteriorScene,FloodScene,DoveJourneyScene],render:{antialias:true}});
+new Phaser.Game({type:Phaser.AUTO,parent:'game',width:960*RENDER_SCALE,height:640*RENDER_SCALE,backgroundColor:'#203a37',pixelArt:false,roundPixels:false,scale:{mode:Phaser.Scale.ENVELOP,autoCenter:Phaser.Scale.CENTER_BOTH},input:{keyboard:{capture:[32,37,38,39,40]}},scene:[BootScene,HomeBaseScene,MeetNoahScene,ArkBlueprintScene,ArkInteriorScene,FloodScene,DoveJourneyScene,RainbowPrismScene],render:{antialias:true}});
