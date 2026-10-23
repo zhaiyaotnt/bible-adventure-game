@@ -67,13 +67,16 @@ export class DoveJourneyScene extends Phaser.Scene {
     this.updraftFx = [];
 
     // persistent actors
-    this.shadow = this.add.ellipse(0, 0, 30, 10, 0x1c2f38, 0.3).setDepth(10);
+    this.shadow = this.add.ellipse(0, 0, 34, 12, 0x1c2f38, 0.3).setDepth(10);
     this.arkImg = this.add.image(0, 0, 'ark-top').setDepth(6).setScale(0.85);
-    this.doveImg = this.add.image(0, 0, 'dove-a').setDepth(11).setDisplaySize(48, 36);
+    this.doveImg = this.add.image(0, 0, 'dove-a').setDepth(11).setDisplaySize(64, 48);
+    this.doveRing = this.add.circle(0, 0, 30, 0xffffff, 0.05).setStrokeStyle(2, 0xffffff, 0.45).setDepth(10);
     this.dragG = this.add.graphics().setDepth(30);
     this.fitCamera = () => {
       const fit = Phaser.Math.Clamp((this.scale.parentSize.width / Math.max(1, this.scale.parentSize.height)) / 1.5, 0.2, 1);
-      this.cameras.main.setZoom(fit * renderScale(this));
+      // The flight worlds are much larger than a 960×640 scene: zoom in a
+      // step further so the dove stays readable and the follow camera works.
+      this.cameras.main.setZoom(fit * renderScale(this) * 1.45);
     };
     this.fitCamera();
     this.scale.on('resize', this.fitCamera);
@@ -185,7 +188,8 @@ export class DoveJourneyScene extends Phaser.Scene {
   placeDove(sync = true) {
     this.doveImg.setPosition(this.s.x, this.s.y);
     this.doveImg.setRotation(this.s.facing);
-    this.shadow.setPosition(this.s.x + 8, this.s.y + 15);
+    this.shadow.setPosition(this.s.x + 8, this.s.y + 17);
+    this.doveRing.setPosition(this.s.x, this.s.y);
     if (sync) this.syncDoveTexture();
   }
   syncDoveTexture() {

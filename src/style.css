@@ -87,4 +87,4 @@ canvas{image-rendering:auto;touch-action:none}
 .dove-boost{position:absolute;right:14px;bottom:calc(196px + env(safe-area-inset-bottom));width:78px;height:78px;border-radius:50%;background:#9fd3f2;color:#1d3a52;border:3px solid #4a7ba6;font:700 13px system-ui,sans-serif;box-shadow:0 3px 0 #344b36;cursor:pointer;pointer-events:auto;touch-action:none}
 .dove-boost:active{background:#6db3e8}
 .dove-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (max-width:520px){.dove-stamina{width:140px}.dove-stamina .dove-bar{height:10px}}
+@media (max-width:640px){.dove-stamina{width:140px}.dove-stamina .dove-bar{height:10px}.dove-buttons{bottom:calc(196px + env(safe-area-inset-bottom))}.dove-boost{bottom:calc(284px + env(safe-area-inset-bottom))}}
