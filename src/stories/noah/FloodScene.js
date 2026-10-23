@@ -206,16 +206,27 @@ export class FloodScene extends Phaser.Scene {
         wg.fillStyle(0x7d838a, 1); wg.fillRect(X + 4, Y + 43, CELL - 8, 6);
         wg.lineStyle(2, 0x6f757b, 1); wg.lineBetween(X + 25, Y + 16, X + 25, Y + 48); wg.lineBetween(X + 43, Y + 16, X + 43, Y + 48);
       }
-      if (cls === 'wade' || cls === 'deep') {
-        const info = st.cells.get(cellKey(x, y));
-        const deep = cls === 'deep';
-        wg.fillStyle(deep ? 0x2a5d9e : 0x6ea9dd, deep ? 0.9 : (info?.gap ? 0.66 : 0.5));
+      // Water: gap cells are the stream itself (their class stays 'gap' at
+      // every level — they just run deeper); floor cells flood by level;
+      // a crate standing on flooded ground still stands IN water.
+      let wFill = 0, wAlpha = 0;
+      if (cls === 'gap') [wFill, wAlpha] = [[0x6ea9dd, 0.66], [0x4a86c8, 0.8], [0x2a5d9e, 0.92]][s.water];
+      else if (cls === 'deep') { wFill = 0x2a5d9e; wAlpha = 0.9; }
+      else if (cls === 'wade') { wFill = 0x6ea9dd; wAlpha = 0.5; }
+      else if (cls === 'crate') {
+        const under = st.cells.get(cellKey(x, y));
+        if (under?.gap) [wFill, wAlpha] = [[0x6ea9dd, 0.66], [0x4a86c8, 0.8], [0x2a5d9e, 0.92]][s.water];
+        else if (under && s.water > under.elev) { wFill = 0x2a5d9e; wAlpha = 0.9; }
+        else if (under && s.water === under.elev) { wFill = 0x6ea9dd; wAlpha = 0.5; }
+      }
+      if (wFill) {
+        wg.fillStyle(wFill, wAlpha);
         wg.fillRect(X, Y, CELL, CELL);
         wg.lineStyle(2, 0x9fc8ee, 0.35);
         const o1 = hash(x, y, 18), o2 = hash(x + 9, y + 4, 18);
         wg.lineBetween(X + 8, Y + 18 + o1, X + 30, Y + 16 + o1); wg.lineBetween(X + 34, Y + 40 + o2, X + 56, Y + 38 + o2);
         const n = clsAt(x, y - 1);
-        if (n !== 'wade' && n !== 'deep') { wg.lineStyle(2, 0xffffff, 0.3); wg.lineBetween(X + 3, Y + 2, X + CELL - 3, Y + 2); }
+        if (n !== 'wade' && n !== 'deep' && n !== 'gap') { wg.lineStyle(2, 0xffffff, 0.3); wg.lineBetween(X + 3, Y + 2, X + CELL - 3, Y + 2); }
       }
     }
     if (!this.app.save.settings.reducedMotion) this.waterTween = this.tweens.add({ targets: wg, alpha: 0.93, duration: 1500, yoyo: true, repeat: -1 });
@@ -243,7 +254,7 @@ export class FloodScene extends Phaser.Scene {
       if (ledge) layer.add(label(this, px, py + (ledge === 'S' ? 18 : ledge === 'N' ? -18 : 14), { N: '▲', S: '▼', E: '▶', W: '◀' }[ledge], '#8a6d1f', 15));
       if (st.switches.has(cellKey(x, y))) {
         const sw = st.switches.get(cellKey(x, y));
-        const on = sw.sluice ? s.sluice : (s.gatesOpen & (1 << Math.max(0, st.gateIds.indexOf(sw.gate)))) !== 0;
+        const on = sw.sluice ? s.sluice : (s.gatesOpen & (1 << Math.max(0, [...st.gates.keys()].indexOf(sw.gate)))) !== 0;
         pg.fillStyle(0x8f9494, 1); pg.fillCircle(px, py, 16); pg.lineStyle(2, 0x5d6167, 1); pg.strokeCircle(px, py, 16);
         if (sw.sluice) {
           pg.lineStyle(4, 0xd9b23a, 1); pg.strokeCircle(px, py, 11);
