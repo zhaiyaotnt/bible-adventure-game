@@ -38,6 +38,7 @@ export class MeetNoahScene extends ExploreScene {
     this.minZoom=this.computeFitZoom();
     this.userZoom=1;this.applyZoom();
     this.buildPeopleAndProps();
+    this.drawSupplyNotesArt();
     const f=this.flags();
     // Previous preview saves could mark this scene complete after only two
     // interactions. Keep their discoveries, but reopen the material quest.
@@ -46,8 +47,9 @@ export class MeetNoahScene extends ExploreScene {
     this.hotspot(970,305,f.blueprint_complete&&!f.mx_complete?'Enter the ark':f.inspected_ark?'Explore the ark':'Inspect the ark',()=>this.inspectArk(),100);
     if(f.inspected_ark)this.hotspot(1110,245,this.planLabel(),()=>this.studyBlueprint(),88);
     this.hotspot(1095,930,'Look beside the stream',()=>app.dialogue('Beside the stream',content.discovery,{fiction:true,reference:content.reference}),78);
-    if(!f.log_moved)this.hotspot(850,820,'Drag the fallen log aside',()=>this.app.toast('Touch the log and drag it away from the path.'),80);
-    for(const item of this.materialSpots()) if((!item.hidden||f.log_moved)&&!f[item.key])this.hotspot(item.x,item.y,item.name,()=>this.collect(item),68);
+    if(!f.log_moved){const hidden=this.materialSpots().find(item=>item.key==='wood_3');this.hotspot(hidden.x-50,hidden.y-45,'Drag the fallen log aside',()=>this.app.toast('Touch the fallen log and drag it away.'),80);}
+    for(const item of this.materialSpots()) if((!item.hidden||f.log_moved)&&!f[item.key])this.hotspot(item.x,item.y,'Search here',()=>this.collect(item),50);
+    this.ensureSupplyNotesHotspot();
     this.hotspot(125,910,'Return to your room',()=>app.router.home(),64);
     this.updateObjective();
     // First time back in the meadow with the ark sealed: swing the camera
@@ -134,7 +136,8 @@ export class MeetNoahScene extends ExploreScene {
     this.setupFallenLog();
   }
   setupFallenLog(){
-    const x=850,y=820;
+    const hiddenSpot=this.materialSpots().find(item=>item.key==='wood_3');
+    const x=hiddenSpot.x-50,y=hiddenSpot.y-45;
     this.logWall=this.wall(x-50,y-16,100,32);
     this.log=this.add.container(x,y).setDepth(y);
     this.log.add(this.add.ellipse(0,13,106,20,0x304a36,.35));
@@ -157,16 +160,16 @@ export class MeetNoahScene extends ExploreScene {
     this.input.on('pointerup',()=>{
       if(!this.draggingLog)return;
       this.draggingLog=false;
-      if(!this.logMoved&&(Math.abs(this.log.y-this.dragStart.y)>64||Math.abs(this.log.x-this.dragStart.x)>64)){this.logMoved=true;this.flags().log_moved=true;this.log.setDepth(this.log.y);this.hiddenWood.setVisible(true);this.hiddenSpark.setVisible(true);this.hotspots=this.hotspots.filter(h=>h.name!=='Drag the fallen log aside');const hidden=this.materialSpots().find(item=>item.key==='wood_3');if(!this.flags()[hidden.key])this.hotspot(hidden.x,hidden.y,hidden.name,()=>this.collect(hidden),68);this.app.persist();this.showFeedback('You shifted the fallen log. A supply was tucked behind it!');this.burst(this.hiddenWood.x,this.hiddenWood.y);}
+      if(!this.logMoved&&(Math.abs(this.log.y-this.dragStart.y)>64||Math.abs(this.log.x-this.dragStart.x)>64)){this.logMoved=true;this.flags().log_moved=true;this.log.setDepth(this.log.y);this.hiddenWood.setVisible(true);this.hiddenSpark.setVisible(true);this.hotspots=this.hotspots.filter(h=>h.name!=='Drag the fallen log aside');const hidden=this.materialSpots().find(item=>item.key==='wood_3');if(!this.flags()[hidden.key])this.hotspot(hidden.x,hidden.y,'Search beneath the log',()=>this.collect(hidden),50);this.app.persist();this.showFeedback('You shifted the fallen log. A supply was tucked behind it!');this.burst(this.hiddenWood.x,this.hiddenWood.y);}
     });
     this.hiddenWood=this.materialArt.wood_3;
     this.hiddenSpark=text(this,x,y-30,'✦',{fontSize:'18px',color:'#fff0ad'}).setOrigin(.5).setDepth(y+5).setVisible(false);
     if(!this.app.save.settings.reducedMotion)this.tweens.add({targets:this.hiddenSpark,y:y-38,alpha:.35,duration:800,yoyo:true,repeat:-1});
-    if(this.flags().log_moved){this.logMoved=true;this.log.setY(y-82);this.logWall.setTo(this.log.x-50,this.log.y-16,100,32);this.hiddenWood.setVisible(true);this.hiddenSpark.setVisible(true);}
+    if(this.flags().log_moved){this.logMoved=true;this.log.setPosition(x,y-82);this.logWall.setTo(this.log.x-50,this.log.y-16,100,32);this.hiddenWood.setVisible(true);this.hiddenSpark.setVisible(true);}
   }
   drawMaterials(){
     const sp=Object.fromEntries(this.materialSpots().map(s=>[s.key,s]));
-    const wood1=this.woodPile(sp.wood_1.x,sp.wood_1.y),wood2=this.woodPile(sp.wood_2.x,sp.wood_2.y),wood3=this.add.container(900,865).setDepth(867).setScale(1.3).setVisible(false);
+    const wood1=this.woodPile(sp.wood_1.x,sp.wood_1.y),wood2=this.woodPile(sp.wood_2.x,sp.wood_2.y),wood3=this.add.container(sp.wood_3.x,sp.wood_3.y).setDepth(sp.wood_3.y+1).setScale(1.3).setVisible(false);
     wood3.add(this.add.ellipse(0,10,45,12,0x334a35,.25));wood3.add(this.add.rectangle(-7,0,36,11,0x9b7048).setAngle(14));wood3.add(this.add.rectangle(12,-8,28,10,0xb68a59).setAngle(-13));
 
     const rope1=this.ropeCoil(sp.rope_1.x,sp.rope_1.y),rope2=this.ropeCoil(sp.rope_2.x,sp.rope_2.y);
@@ -179,19 +182,40 @@ export class MeetNoahScene extends ExploreScene {
     const hammer=this.add.container(sp.tool_1.x,sp.tool_1.y).setDepth(sp.tool_1.y+1).setScale(1.3);
     hammer.add(this.add.ellipse(0,12,36,10,0x334a35,.3));hammer.add(this.add.rectangle(0,1,5,27,0x986f47).setAngle(-20));
     hammer.add(this.add.rectangle(2,-11,22,8,0x777767).setAngle(-20));hammer.add(this.add.rectangle(-7,-11,8,13,0x777767).setAngle(-20));
-    // A warm pulse and small glint make each quest prop legible against the grass.
-    for(const key of ['wood_1','wood_2','rope_1','rope_2','pitch','tool_1']){
-      const {x,y}=sp[key];
-      const glint=text(this,x+20,y-22,'✦',{fontSize:'14px',color:'#fff0ad'}).setOrigin(.5).setDepth(y+20);
-      if(!this.app.save.settings.reducedMotion)this.tweens.add({targets:glint,y:y-28,alpha:.35,duration:800,yoyo:true,repeat:-1});
-    }
     this.materialArt={wood_1:wood1,wood_2:wood2,wood_3:wood3,rope_1:rope1,rope_2:rope2,tool_1:hammer,pitch:jar};
+  }
+  drawSupplyNotesArt(){
+    const x=990,y=490;
+    const table=this.add.container(x,y).setDepth(y+1);
+    table.add(this.add.ellipse(0,18,78,20,0x334a35,.28));
+    table.add(this.add.rectangle(0,8,72,13,0x795936).setStrokeStyle(2,0x563f30));
+    table.add(this.add.rectangle(0,1,43,31,0xe8d6a7).setAngle(-5).setStrokeStyle(2,0x8d7450));
+    table.add(this.add.rectangle(-2,-7,25,2,0x8b7652).setAngle(-5));
+    table.add(this.add.rectangle(-2,-1,21,2,0x8b7652).setAngle(-5));
+    table.add(this.add.rectangle(-2,5,17,2,0x8b7652).setAngle(-5));
+    label(this,x,y-25,'FIELD NOTES','#f9e7ba',12).setDepth(y+3);
+    table.setVisible(!this.flags().supply_quest_complete);
+    this.supplyNotesArt=table;
+  }
+  ensureSupplyNotesHotspot(){
+    const f=this.flags();
+    if(this.supplyNotesHotspotAdded||!f.met_noah||!f.inspected_ark||f.supply_quest_complete)return;
+    this.supplyNotesHotspotAdded=true;
+    this.hotspot(990,490,'Read Noah’s field notes',()=>this.openSupplyNotes(),66);
+  }
+  openSupplyNotes(){
+    const f=this.flags(),spots=this.materialSpots();
+    const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const labels={wood_1:'Wood · 1 of 3',wood_2:'Wood · 2 of 3',wood_3:'Wood · 3 of 3',rope_1:'Rope · 1 of 2',rope_2:'Rope · 2 of 2',tool_1:'Hammer',pitch:'Pitch'};
+    const remaining=spots.filter(item=>!f[item.key]);
+    const entries=remaining.map(item=>`<p class="save-note"><b>${esc(labels[item.key])}</b><br>${esc(item.clue)}</p>`).join('');
+    this.app.openModal(`<p class="overline">NOAH’S FIELD NOTES</p><h2>Supplies still needed</h2><p class="reading">Follow the clues and search the meadow. The notes point to an area; keep your eyes open for the supply itself.</p>${entries||'<p class="reading">You found every supply. Bring them back to Noah.</p>'}<button id="supply-notes-close" class="primary">Back to the meadow</button>`,'reading');
+    document.getElementById('supply-notes-close').onclick=()=>this.app.closeModal();
   }
   woodPile(x,y){const pile=this.add.container(x,y).setDepth(y).setScale(1.3);pile.add(this.add.ellipse(0,11,52,12,0x334a35,.28));for(let i=0;i<3;i++){pile.add(this.add.rectangle((i-1)*8,(i%2)*6,42,10,i%2?0x9b7048:0xb08454).setAngle(i*11-10));}return pile;}
   ropeCoil(x,y){const rope=this.add.container(x,y).setDepth(y).setScale(1.3);rope.add(this.add.ellipse(0,11,39,10,0x334a35,.28));const coil=this.add.graphics();coil.lineStyle(4,0xc79a59,1).strokeCircle(-3,0,12).strokeCircle(3,0,8).strokeCircle(0,0,4);rope.add(coil);rope.add(this.add.arc(12,3,10,20,230,false,0xc79a59).setStrokeStyle(3,0xc79a59));return rope;}
-  // Supply spots are rolled once per supply quest (one candidate per
-  // item from supplySpots.js pools) and persisted, so the hunt differs
-  // between adventures but never reshuffles mid-quest.
+  // Curated supply locations are selected once per quest and persisted,
+  // so the hunt varies between adventures but never reshuffles mid-quest.
   materialSpots(){
     if(this._spots)return this._spots;
     let roll=null;
@@ -239,7 +263,7 @@ export class MeetNoahScene extends ExploreScene {
   }
   inspectArk(){
     const f=this.flags();if(!f.met_noah){this.app.dialogue('The unfinished ark',this.story.content.before_noah,{fiction:false,reference:this.story.content.reference});return;}
-    if(!f.inspected_ark){f.inspected_ark=true;this.app.persist();this.updateObjective();this.burst(970,305);this.app.dialogue('The ark',this.story.content.ark,{reference:'Genesis 6:14–16',onComplete:()=>{this.hotspot(1110,245,this.planLabel(),()=>this.studyBlueprint(),88);this.updateObjective();}});return;}
+    if(!f.inspected_ark){f.inspected_ark=true;this.app.persist();this.ensureSupplyNotesHotspot();this.updateObjective();this.burst(970,305);this.app.dialogue('The ark',this.story.content.ark,{reference:'Genesis 6:14–16',onComplete:()=>{this.hotspot(1110,245,this.planLabel(),()=>this.studyBlueprint(),88);this.updateObjective();}});return;}
     if(f.blueprint_complete){
       if(!f.mx_complete){this.app.dialogue('Noah',this.story.content.mystery_invite,{fiction:true,reference:'Genesis 6:14–16',onComplete:()=>this.app.router.story(this.story.id,'ark_interior')});return;}
       this.app.dialogue('The finished ark',this.story.content.ark_finished,{fiction:true,reference:'Genesis 6:14–16'});return;
@@ -273,8 +297,9 @@ export class MeetNoahScene extends ExploreScene {
   updateObjective(){
     const f=this.flags(),bag=this.inventory(),wood=inventoryCount(bag,'wood'),rope=inventoryCount(bag,'rope'),tool=inventoryCount(bag,'tool'),pitch=inventoryCount(bag,'pitch');
     const ribs=f.ark_ribs_done||f.blueprint_stage_one;
-    const objective=f.prism_complete?'Noah’s chapter is complete — keep exploring, or return to your room.':f.dove_complete?'The dove has returned. Talk with Noah to continue into the sunlit valley.':f.flood_complete?'The waters are going down — talk to Noah about sending out the dove.':f.mx_complete?'Dark clouds are gathering over the valley — talk to Noah about the coming flood.':f.blueprint_complete&&!f.preview_complete?'Tell Noah the ark is finished!':f.blueprint_complete?'The ark is finished — but inside is a mystery. Explore the ark and step inside!':f.preview_complete?'The ark is ready. Keep exploring the meadow.':f.build_unlocked?`Build the ark with Noah: ribs ${ribs?'✓':'…'} · decks ${f.ark_decks_done?'✓':'…'} · sealing …`:!f.met_noah?'Find Noah somewhere in the meadow.':!f.inspected_ark?'Take a closer look at the ark.':!f.supply_quest_complete?`Find supplies: wood ${wood}/3 · rope ${rope}/2 · tool ${tool}/1 · pitch ${pitch}/1`:'Return to Noah with the supplies.';
+    const objective=f.prism_complete?'Noah’s chapter is complete — keep exploring, or return to your room.':f.dove_complete?'The dove has returned. Talk with Noah to continue into the sunlit valley.':f.flood_complete?'The waters are going down — talk to Noah about sending out the dove.':f.mx_complete?'Dark clouds are gathering over the valley — talk to Noah about the coming flood.':f.blueprint_complete&&!f.preview_complete?'Tell Noah the ark is finished!':f.blueprint_complete?'The ark is finished — but inside is a mystery. Explore the ark and step inside!':f.preview_complete?'The ark is ready. Keep exploring the meadow.':f.build_unlocked?`Build the ark with Noah: ribs ${ribs?'✓':'…'} · decks ${f.ark_decks_done?'✓':'…'} · sealing …`:!f.met_noah?'Find Noah somewhere in the meadow.':!f.inspected_ark?'Take a closer look at the ark.':!f.supply_quest_complete?`Find supplies: wood ${wood}/3 · rope ${rope}/2 · hammer ${tool}/1 · pitch ${pitch}/1 · clues in Noah’s notes`:'Return to Noah with the supplies.';
     this.app.showHUD('Noah’s Meadow',objective,'NOAH’S ARK · CHAPTER 01');
     this.hotspots=this.hotspots.filter(h=>{const item=this.materialSpots().find(i=>i.x===h.x&&i.y===h.y);return !item||!f[item.key];});
+    if(f.supply_quest_complete){this.hotspots=this.hotspots.filter(h=>h.name!=='Read Noah’s field notes');this.supplyNotesArt?.setVisible(false);}
   }
 }

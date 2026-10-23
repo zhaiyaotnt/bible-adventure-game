@@ -79,3 +79,19 @@ export const FLIGHTS = [
     tuning: { stamina: { base: 5.6 } },
   },
 ];
+
+// Reflect the whole authored route across the horizontal axis. Because the
+// wind and all objectives move together, the same proven flight remains fair.
+export function mirrorFlight(level) {
+  const H = level.world.height;
+  const point = p => ({ ...p, y: H - p.y });
+  return {
+    ...level,
+    start: point(level.start), arkZone: point(level.arkZone),
+    startFacing: -(level.startFacing ?? 0),
+    windZones: level.windZones.map(z => ({ ...z, shape: { ...z.shape, y: H - z.shape.y - z.shape.h }, wind: { x: z.wind.x, y: -z.wind.y } })),
+    updrafts: (level.updrafts ?? []).map(point),
+    landmarks: level.landmarks.map(point),
+    changes: (level.changes ?? []).map(c => ({ ...c, wind: { x: c.wind.x, y: -c.wind.y } })),
+  };
+}

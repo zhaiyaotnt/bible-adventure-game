@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { label, renderScale } from '../../scenes/art.js';
 import { FLIGHT_DT, initialFlightState, sampleWind, stepFlight, objectiveStatus, flightFailure, updraftAt } from './dove.js';
-import { FLIGHTS } from './doveLevels.js';
+import { FLIGHTS, mirrorFlight } from './doveLevels.js';
 import { makeDoveTextures, paintWorld } from './doveArt.js';
 
 // Game 5 · The Dove's Journey (Genesis 8). One scene, three authored
@@ -103,7 +103,16 @@ export class DoveJourneyScene extends Phaser.Scene {
 
   // ------------------------------------------------------------ flight setup
   setupFlight() {
-    const level = FLIGHTS[this.flightIdx];
+    const base = FLIGHTS[this.flightIdx];
+    const routeKey = 'aaronAdventure.dove.routes.v1';
+    let routes = {};
+    try { routes = JSON.parse(localStorage.getItem(routeKey) || '{}') ?? {}; } catch { routes = {}; }
+    if (!routes || typeof routes !== 'object' || Array.isArray(routes)) routes = {};
+    if (!['base', 'mirror'].includes(routes[this.flightIdx])) {
+      routes[this.flightIdx] = Math.random() < 0.5 ? 'base' : 'mirror';
+      try { localStorage.setItem(routeKey, JSON.stringify(routes)); } catch { /* storage unavailable */ }
+    }
+    const level = routes[this.flightIdx] === 'mirror' ? mirrorFlight(base) : base;
     this.level = level;
     for (const o of this.worldObjs) o.destroy();
     this.worldObjs = []; this.arrows = []; this.rings = []; this.updraftFx = [];
@@ -261,8 +270,8 @@ export class DoveJourneyScene extends Phaser.Scene {
     const btnLabel = fromBriefing ? 'Start flight →' : fromFailure ? 'Back' : 'Close';
     this.app.openModal(`<p class="overline">WIND MAP · FLIGHT ${this.flightIdx + 1} OF 3</p><h2>${level.title}</h2>
       <svg viewBox="0 0 ${px(W)} ${py(H)}" style="width:100%;background:#2c4657;border-radius:10px"><defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#b9d9e8"/></marker></defs>${arrows}${marks}</svg>
-      <p class="reading">Arrows show the authored wind — it is the same wind you will feel. Dashed circles and labels mark what matters. <b>${REMINDERS[this.flightIdx]}</b></p>
-      <p class="reading">Drag on the sky (or WASD / arrow keys) to steer. Hold SPACE — or the BOOST button — to fly faster at extra stamina cost. If the dove tires out, you simply try the flight again.</p>
+      <p class="reading"><b>Your goal:</b> ${['find any 2 of 3 signs, then return to the ark.','reach the silver-green olive tree, take a leaf, then return to the ark.','reach the green grove and land there; do not return to the ark.'][this.flightIdx]} <b>${REMINDERS[this.flightIdx]}</b></p>
+      <p class="reading">Arrows show wind direction; denser arrows mean a stronger push. Rings mark places to inspect. Drag on the sky (or use WASD / arrow keys) to steer; release to glide. Boost spends stamina faster. Blue updraft rings restore some stamina. A short safe lesson starts on the first flight.</p>
       <button id="dove-map-go" class="primary">${btnLabel}</button>`, 'reading');
     document.getElementById('dove-map-go').onclick = () => {
       this.app.closeModal();
@@ -492,6 +501,7 @@ export class DoveJourneyScene extends Phaser.Scene {
       return;
     }
     const f = this.flags();
+    try { const key='aaronAdventure.dove.routes.v1'; let routes=JSON.parse(localStorage.getItem(key)||'{}'); if(!routes||typeof routes!=='object'||Array.isArray(routes))routes={}; delete routes[this.flightIdx]; localStorage.setItem(key,JSON.stringify(routes)); } catch { /* storage unavailable */ }
     f[`dove_flight${this.flightIdx + 1}_done`] = true;
     this.app.persist();
     if (this.flightIdx === 0) {

@@ -25,6 +25,13 @@ export function rollStageSetup(stage, rand = Math.random) {
   if (stage === 1) {
     setup.angles = { 'rib-a': pickOne(RIB_ANGLES, rand), 'rib-b': pickOne(RIB_ANGLES, rand) };
   }
+  if (stage === 3) {
+    // Stable rain-test leaks: two or three authored seams, with one point
+    // on each selected seam. The stage setup is already persisted by the
+    // scene, so a player who leaves during the test sees the same failures.
+    const seams = shuffledIndices(3, rand).slice(0, rand() < 0.5 ? 2 : 3);
+    setup.leaks = seams.map((seam, i) => ({ seam, t: 0.18 + rand() * 0.64, id: i }));
+  }
   return setup;
 }
 
@@ -40,6 +47,7 @@ export function normalizeStageSetup(stage, raw) {
     const a = raw.angles;
     if (!a || !RIB_ANGLES.includes(a['rib-a']) || !RIB_ANGLES.includes(a['rib-b'])) return null;
   }
+  if (stage === 3 && (!Array.isArray(raw.leaks) || raw.leaks.length < 2 || raw.leaks.length > 3 || raw.leaks.some(l => !Number.isInteger(l.seam) || l.seam < 0 || l.seam > 2 || !Number.isFinite(l.t) || l.t < 0.18 || l.t > 0.82) || new Set(raw.leaks.map(l => l.seam)).size !== raw.leaks.length)) return null;
   return raw;
 }
 

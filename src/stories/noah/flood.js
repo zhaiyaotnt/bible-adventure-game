@@ -55,6 +55,31 @@ function makeStage(def) {
   };
 }
 
+// Reflect an authored board left-to-right. Since every tile, object, gate,
+// ledge and checkpoint moves together, reachability is preserved exactly.
+export function mirrorStage(stage) {
+  const initial = stage.initial(), mx = x => stage.w - 1 - x, pair = p => [mx(p[0]), p[1]];
+  const ledges = Object.fromEntries([...stage.ledges].map(([k, dir]) => {
+    const [x,y] = k.split(',').map(Number);
+    return [key(mx(x),y), dir === 'E' ? 'W' : dir === 'W' ? 'E' : dir];
+  }));
+  const def = {
+    ...stage,
+    rows: stage.rows.map(row => [...row].reverse().join('')),
+    start: pair(stage.start), exit: pair(stage.exit),
+    crates: initial.crates.map(pair),
+    plank: initial.plankAt ? pair(initial.plankAt) : null,
+    gates: [...stage.gates.values()].map(g => ({ ...g, cells: g.cells.map(pair) })),
+    switches: [...stage.switches.values()].map(sw => ({ ...sw, at: pair(sw.at) })),
+    ledges,
+    checkpoints: (stage.checkpoints ?? []).map(pair),
+    nook: stage.nook ? pair(stage.nook) : null,
+    advanceAfterCrateAt: stage.advanceAfterCrateAt ? pair(stage.advanceAfterCrateAt) : null,
+  };
+  delete def.cells; delete def.w; delete def.h; delete def.gateCell; delete def.gaps; delete def.initial;
+  return makeStage(def);
+}
+
 export function effectiveLevel(stage, s) { return Math.max(0, s.water - (s.sluice ? 1 : 0)); }
 
 export function crateAt(s, x, y) { return s.crates.some(([cx, cy]) => cx === x && cy === y); }
@@ -300,7 +325,8 @@ export function normalizeFloodScratch(raw, flags = {}) {
   if (!raw || !Number.isInteger(raw.stage) || raw.stage < 0 || raw.stage >= STAGES.length || !raw.s || typeof raw.s !== 'object') return null;
   if (raw.stage >= 1 && !flags.flood_stage1_done) return null;
   if (raw.stage >= 2 && !flags.flood_stage2_done) return null;
-  const stage = STAGES[raw.stage], s = raw.s;
+  if (raw.variant !== undefined && !['base', 'mirror'].includes(raw.variant)) return null;
+  const stage = raw.variant === 'mirror' ? mirrorStage(STAGES[raw.stage]) : STAGES[raw.stage], s = raw.s;
   const maxGateBits = (1 << stage.gates.size) - 1;
   if (!Number.isInteger(s.x) || !Number.isInteger(s.y) || !Number.isInteger(s.water) || s.water < 0 || s.water >= WATER.length) return null;
   if (!Number.isInteger(s.gatesOpen) || s.gatesOpen < 0 || (s.gatesOpen & ~maxGateBits) !== 0 || typeof s.sluice !== 'boolean') return null;
@@ -329,7 +355,7 @@ export function normalizeFloodScratch(raw, flags = {}) {
   if (!cpCell || cpCell.wall || cpCell.gap) return null;
   const hintsUsed = Number.isInteger(raw.hintsUsed) && raw.hintsUsed >= 0 && raw.hintsUsed <= 3 ? raw.hintsUsed : 0;
   return {
-    stage: raw.stage,
+    stage: raw.stage, variant: raw.variant ?? 'base',
     s: {
       x: s.x, y: s.y, water: s.water, gatesOpen: s.gatesOpen, sluice: s.sluice,
       plank: s.plank, plankAt: s.plankAt ? [...s.plankAt] : null,

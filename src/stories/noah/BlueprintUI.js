@@ -1,4 +1,4 @@
-import { CELLS, DECK_NAMES, ROOMS, CLUES, HINTS, FINAL_CONDITION, evaluate, finalSatisfied, loadMysteryState, saveMysteryState } from './mystery.js';
+import { CELLS, DECK_NAMES, ROOMS, createMysteryRun, evaluate, finalSatisfied, loadMysteryState, saveMysteryState } from './mystery.js';
 
 // The interactive blueprint for the Ark Mystery. DOM-based (like the
 // game's other panels) so drag-and-drop, pencil marks and the clue list
@@ -13,6 +13,8 @@ export function openArkBlueprint(app, hooks = {}) {
   const storyId = app.save.current.storyId;
   const flags = app.save.stories[storyId].questFlags;
   const state = loadMysteryState();
+  const run = hooks.run ?? createMysteryRun(state.seed);
+  const { clues: CLUES, hints: HINTS, condition: FINAL_CONDITION } = run;
   let mode = 'place';
   let selected = null; // room id chosen in the palette
   const save = () => saveMysteryState(state);
@@ -132,7 +134,7 @@ export function openArkBlueprint(app, hooks = {}) {
 
   function flash(message) { $('bp-message').textContent = message; }
   function inspect() {
-    const result = evaluate(state.grid);
+    const result = evaluate(state.grid, CLUES);
     state.checks++; save();
     if (result.complete) {
       if (!flags.mx_solved) { hooks.onAllSatisfied?.(); flash('Noah traces the whole plan with one finger… then smiles. “Every condition holds. Every single one.”'); }
@@ -145,9 +147,9 @@ export function openArkBlueprint(app, hooks = {}) {
     else flash('Noah studies the plan for a long moment, then shakes his head. “Keep reasoning — I won’t keep counting for you.”');
   }
   function submitFinal() {
-    const result = evaluate(state.grid);
+    const result = evaluate(state.grid, CLUES);
     if (!result.complete) { flash('The plan no longer satisfies every clue. Check it again before submitting.'); return; }
-    if (!finalSatisfied(state.grid)) { flash('Noah frowns at the final check. “This puts the hammering right under our bunks. Look again.”'); return; }
+    if (!finalSatisfied(state.grid, FINAL_CONDITION)) { flash('Noah frowns at the final check. “This arrangement misses the last condition. Look again.”'); return; }
     hooks.onFinalSubmitted?.();
   }
   $('bp-inspect').onclick = inspect;

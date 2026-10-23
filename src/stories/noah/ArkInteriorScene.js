@@ -1,6 +1,6 @@
 import { ExploreScene } from '../../scenes/ExploreScene.js';
 import { rect, label, sparkle, character } from '../../scenes/art.js';
-import { CLUES } from './mystery.js';
+import { createMysteryRun, loadMysteryState } from './mystery.js';
 import { openArkBlueprint } from './BlueprintUI.js';
 
 // Inside the finished ark (Chapter 1 · Game 3: The Ark Mystery).
@@ -12,11 +12,12 @@ export class ArkInteriorScene extends ExploreScene {
   init({ story, deck, spawnX }) { this.story = story; this.deck = deck || 'middle'; this.spawnX = spawnX; }
   flags() { return this.app.save.stories[this.story.id].questFlags; }
   clueFound(id) { return !!this.flags()[`mx_clue_${id}`]; }
-  foundCount() { return CLUES.filter(c => this.clueFound(c.id)).length; }
+  foundCount() { return this.mysteryRun.clues.filter(c => this.clueFound(c.id)).length; }
 
   create() {
     const app = this.game.registry.get('app');
     this.app = app;
+    this.mysteryRun = createMysteryRun(loadMysteryState().seed);
     // Interior shell: timber walls, a plank floor, heavy beams. The shell
     // is drawn well past the room's edges because the camera (below) now
     // frames a closer view that can pan beyond the 960x640 room.
@@ -57,7 +58,7 @@ export class ArkInteriorScene extends ExploreScene {
     this.blueprintBtn = btn;
   }
   openBlueprint() {
-    openArkBlueprint(this.app, {
+    openArkBlueprint(this.app, { run: this.mysteryRun,
       onAllSatisfied: () => {
         const f = this.flags(); f.mx_solved = true; this.app.persist(); this.updateObjective();
         this.app.toast('Every condition on the plan is satisfied. Noah wants one final check — talk to him on the middle deck.');
@@ -86,7 +87,7 @@ export class ArkInteriorScene extends ExploreScene {
     this.app.showHUD(`Inside the Ark · ${this.deck[0].toUpperCase() + this.deck.slice(1)} Deck`, objective, 'THE ARK MYSTERY · GENESIS 6');
   }
   grantClue(id) {
-    const clue = CLUES.find(c => c.id === id), f = this.flags();
+    const clue = this.mysteryRun.clues.find(c => c.id === id), f = this.flags();
     if (this.clueFound(id)) { this.app.dialogue('Already in your notes', [clue.text], { fiction: false, reference: clue.source }); return; }
     f[`mx_clue_${id}`] = true; this.app.persist(); this.updateObjective();
     this.app.dialogue(`Clue found · ${this.foundCount()} of ${CLUES.length}`, [clue.text], { fiction: false, reference: clue.source, onComplete: () => this.app.toast('Clue added to the blueprint notes. 📐') });

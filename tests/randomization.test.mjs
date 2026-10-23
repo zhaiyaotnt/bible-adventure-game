@@ -44,4 +44,8 @@ test('build · stage setups are valid permutations with legal rib angles', () =>
   const badAngle = rollStageSetup(1, mulberry32(5));
   badAngle.angles['rib-a'] = 0.3;
   assert.equal(normalizeStageSetup(1, badAngle), null);
+  const rain = rollStageSetup(3, mulberry32(9));
+  assert.ok(rain.leaks.length >= 2 && rain.leaks.length <= 3);
+  assert.equal(normalizeStageSetup(3, rain), rain);
+  assert.equal(normalizeStageSetup(3, { ...rain, leaks: [{ seam: 9, t: .5 }] }), null);
 });

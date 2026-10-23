@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CLUES, SOLUTION, FINAL_CONDITION, evaluate, finalSatisfied, CELLS, ROOMS } from '../src/stories/noah/mystery.js';
+import { CLUES, SOLUTION, FINAL_CONDITION, evaluate, finalSatisfied, CELLS, ROOMS, createMysteryRun } from '../src/stories/noah/mystery.js';
 
 // Exhaustive check: the shipped clue set must have exactly one solution —
 // the intended arrangement — and it must pass Noah's final condition.
@@ -34,4 +34,17 @@ test('intended arrangement satisfies every clue and the final condition', () => 
 test('empty and partial plans do not complete', () => {
   assert.equal(evaluate({}).complete, false);
   assert.equal(evaluate({ A: 'bird', D: 'food' }).complete, false);
+});
+test('seeded puzzle runs keep clues fair and produce different room arrangements', () => {
+  const a = createMysteryRun(101), b = createMysteryRun(202);
+  for (const run of [a, b]) {
+    assert.equal(run.clues.length, CLUES.length);
+    assert.ok(run.clues.every(c => c.test(run.solution)));
+    assert.ok(run.condition.test(run.solution));
+    const grid = Object.fromEntries(CELLS.map((cell, i) => [cell, ROOMS.find(r => run.solution[r.id] === i)?.id]));
+    assert.equal(evaluate(grid, run.clues).complete, true);
+    assert.equal(finalSatisfied(grid, run.condition), true);
+  }
+  assert.notDeepEqual(a.solution, b.solution);
+  assert.notEqual(a.clues[0].text, b.clues[0].text);
 });

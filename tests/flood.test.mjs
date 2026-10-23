@@ -1,7 +1,7 @@
 // Flood puzzle verification: every stage must be solvable, must force
 // its signature mechanisms, and must not be trivially short.
 import assert from 'node:assert/strict';
-import { STAGE1, STAGE2, STAGE3, solve, successors, cellClass, normalizeFloodScratch } from '../src/stories/noah/flood.js';
+import { STAGE1, STAGE2, STAGE3, solve, successors, cellClass, normalizeFloodScratch, mirrorStage } from '../src/stories/noah/flood.js';
 
 // Replay an action list, returning the final state (asserts each step is legal).
 function replay(stage, actions) {
@@ -77,10 +77,18 @@ function uses(actions, pred) { return actions.some(pred); }
 
 // ---- Scratch state: stale or malformed local data must never crash/resume.
 {
-  const valid = { stage: 0, s: STAGE1.initial(), checkpoint: STAGE1.start, hintsUsed: 1, nook: false };
+  const valid = { stage: 0, variant: 'base', s: STAGE1.initial(), checkpoint: STAGE1.start, hintsUsed: 1, nook: false };
   assert.deepEqual(normalizeFloodScratch(valid), valid, 'valid scratch state is restored');
   assert.equal(normalizeFloodScratch({ ...valid, stage: 99 }), null, 'out-of-range stage is rejected');
   assert.equal(normalizeFloodScratch({ ...valid, stage: 2, s: STAGE3.initial(), checkpoint: STAGE3.start }), null, 'later stage requires matching save flags');
   assert.equal(normalizeFloodScratch({ ...valid, s: { ...valid.s, crates: [[999, 999], [3, 5]] } }), null, 'invalid object coordinates are rejected');
+}
+// Mirrored boards move all route features together and remain solvable.
+for (const stage of [STAGE1, STAGE2, STAGE3]) {
+  const mirrored = mirrorStage(stage);
+  const solution = solve(mirrored);
+  assert.ok(solution, `${stage.name} mirrored board is solvable`);
+  assert.equal(mirrored.start[0], stage.w - 1 - stage.start[0]);
+  assert.equal(mirrored.exit[0], stage.w - 1 - stage.exit[0]);
 }
 console.log('all flood tests passed');

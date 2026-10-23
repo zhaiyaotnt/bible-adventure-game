@@ -60,16 +60,58 @@ export const HINTS = [
 // grid: { A:'bird', ... } (cell letter -> room id). Evaluate counts the
 // clue conditions the current arrangement satisfies; an empty cell makes
 // every condition that mentions its room unsatisfied.
-export function evaluate(grid) {
+export function evaluate(grid, clues = CLUES) {
   const pos = {};
   for (const [cell, room] of Object.entries(grid)) if (room) pos[room] = CELLS.indexOf(cell);
-  const perClue = CLUES.map(c => c.rooms.every(r => r in pos) && !!c.test(pos));
-  return { perClue, count: perClue.filter(Boolean).length, total: CLUES.length, complete: perClue.every(Boolean) && Object.keys(pos).length === 9 };
+  const perClue = clues.map(c => c.rooms.every(r => r in pos) && !!c.test(pos));
+  return { perClue, count: perClue.filter(Boolean).length, total: clues.length, complete: perClue.every(Boolean) && Object.keys(pos).length === 9 };
 }
-export function finalSatisfied(grid) {
+export function finalSatisfied(grid, condition = FINAL_CONDITION) {
   const pos = {};
   for (const [cell, room] of Object.entries(grid)) if (room) pos[room] = CELLS.indexOf(cell);
-  return Object.keys(pos).length === 9 && FINAL_CONDITION.test(pos);
+  return Object.keys(pos).length === 9 && condition.test(pos);
+}
+
+// Puzzle variants rename the room identities through a seeded permutation.
+// This preserves every authored relation and therefore the exact solution
+// count while changing both the arrangement and the clues between runs.
+const TERMS = {
+  bird: ['bird enclosure', 'birds'], sheep: ['sheep enclosure', 'sheep pen', 'sheep'],
+  large: ['the large animals', 'large animal enclosure', 'large animals'],
+  food: ['food storage', 'food'], water: ['water storage', 'water barrels'],
+  tools: ['tool room', 'tools'], workshop: ['workshop'],
+  living: ['living quarters', 'family'], supply: ['supply room', 'supply'],
+};
+const roomNames = Object.fromEntries(ROOMS.map(r => [r.id, r.label]));
+const swapRoomTerms = (text, map) => {
+  let out = text;
+  const replaceTerms = [];
+  for (const [from, terms] of Object.entries(TERMS)) {
+    for (const term of [...terms].sort((a,b) => b.length-a.length)) replaceTerms.push([term, `__ROOMTERM${replaceTerms.length}__`, map[from]]);
+  }
+  for (const [term, token] of replaceTerms) out = out.replace(new RegExp(term, 'gi'), token);
+  for (const [, token, to] of replaceTerms) {
+    const replacement = TERMS[to].find(t => t.length > 3) ?? roomNames[to];
+    out = out.replaceAll(token, replacement);
+  }
+  return out;
+};
+export function createMysteryRun(seed) {
+  let state = seed >>> 0;
+  const rand = () => { state = (Math.imul(state, 1664525) + 1013904223) >>> 0; return state / 4294967296; };
+  const ids = ROOMS.map(r => r.id);
+  for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+  const map = Object.fromEntries(ROOMS.map((r, i) => [r.id, ids[i]]));
+  const clues = CLUES.map(c => ({
+    ...c,
+    rooms: c.rooms.map(r => map[r]),
+    source: swapRoomTerms(c.source, map),
+    text: swapRoomTerms(c.text, map),
+    test: p => c.test(Object.fromEntries(ROOMS.map(r => [r.id, p[map[r.id]]]))),
+  }));
+  const condition = { ...FINAL_CONDITION, text: swapRoomTerms(FINAL_CONDITION.text, map), test: p => FINAL_CONDITION.test(Object.fromEntries(ROOMS.map(r => [r.id, p[map[r.id]]]))) };
+  const solution = Object.fromEntries(ROOMS.map(r => [map[r.id], SOLUTION[r.id]]));
+  return { seed: seed >>> 0, clues, condition, solution, hints: HINTS.map(h => swapRoomTerms(h, map)) };
 }
 
 // Working state (arrangement, pencil marks, notes, inspect count, hints
@@ -80,9 +122,11 @@ const KEY = 'aaronAdventure.arkMystery.v1';
 export function loadMysteryState() {
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (raw) { const s = JSON.parse(raw); if (s && typeof s === 'object' && s.grid) return { grid: {}, marks: {}, notes: '', checks: 0, hints: 0, ...s }; }
+    if (raw) { const s = JSON.parse(raw); if (s && typeof s === 'object' && s.grid) return { grid: {}, marks: {}, notes: '', checks: 0, hints: 0, seed: Math.floor(Math.random() * 0xffffffff), ...s }; }
   } catch { /* storage unavailable: play without persistence */ }
-  return { grid: {}, marks: {}, notes: '', checks: 0, hints: 0 };
+  const state = { grid: {}, marks: {}, notes: '', checks: 0, hints: 0, seed: Math.floor(Math.random() * 0xffffffff) };
+  saveMysteryState(state);
+  return state;
 }
 export function saveMysteryState(state) {
   try { window.localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* ignore */ }

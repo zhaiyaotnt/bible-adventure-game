@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { character, label, renderScale } from '../../scenes/art.js';
 import {
-  STAGES, WATER, FLOOD_SCRATCH_KEY, clearFloodScratch, normalizeFloodScratch,
+  STAGES, WATER, FLOOD_SCRATCH_KEY, clearFloodScratch, normalizeFloodScratch, mirrorStage,
   successors, standable, cellClass, canAdvance, isGoal, key as cellKey,
 } from './flood.js';
 
@@ -40,17 +40,19 @@ export class FloodScene extends Phaser.Scene {
     try { scratch = normalizeFloodScratch(JSON.parse(localStorage.getItem(FLOOD_SCRATCH_KEY) || 'null'), f); } catch { scratch = null; }
     if (f.flood_complete) { scratch = null; this.replay = true; }
     if (scratch) {
-      this.stageIdx = scratch.stage; this.s = scratch.s;
+      this.stageIdx = scratch.stage; this.variant = scratch.variant; this.s = scratch.s;
       this.checkpoint = scratch.checkpoint;
       this.hintsUsed = scratch.hintsUsed; this.nookFound = scratch.nook;
     } else {
       clearFloodScratch();
       this.stageIdx = !f.flood_stage1_done ? 0 : !f.flood_stage2_done ? 1 : 2;
-      this.s = STAGES[this.stageIdx].initial();
-      this.checkpoint = [...STAGES[this.stageIdx].start];
+      this.variant = Math.random() < 0.5 ? 'base' : 'mirror';
+      const selected = this.selectedStage();
+      this.s = selected.initial();
+      this.checkpoint = [...selected.start];
       this.hintsUsed = 0; this.nookFound = !!f.flood_nook;
     }
-    this.stage = STAGES[this.stageIdx];
+    this.stage = this.selectedStage();
     this.forecast = 0; this.busy = false; this.finaleArmed = false; this.finaleDone = false; this.walkToken = 0;
     this.lastBank = [...this.stage.start];
     this.offX = (960 - this.stage.w * CELL) / 2; this.offY = (640 - this.stage.h * CELL) / 2;
@@ -90,13 +92,15 @@ export class FloodScene extends Phaser.Scene {
     });
     app.showHUD(`The Rising Flood · ${this.stage.name}`, '', 'CHAPTER 1 · GAME 4');
     this.updateHUD();
+    if (!scratch) this.saveScratch();
     if (!scratch) { if (this.stageIdx === 0 && !this.replay) this.showHowTo(); else this.showIntro(); }
     if (this.replay) app.toast('You already completed The Rising Flood — replaying for fun.');
   }
 
   // ------------------------------------------------------------ scratch
+  selectedStage() { return this.variant === 'mirror' ? mirrorStage(STAGES[this.stageIdx]) : STAGES[this.stageIdx]; }
   saveScratch() {
-    try { localStorage.setItem(FLOOD_SCRATCH_KEY, JSON.stringify({ stage: this.stageIdx, s: this.s, checkpoint: this.checkpoint, hintsUsed: this.hintsUsed, nook: this.nookFound })); } catch { /* storage unavailable */ }
+    try { localStorage.setItem(FLOOD_SCRATCH_KEY, JSON.stringify({ stage: this.stageIdx, variant: this.variant, s: this.s, checkpoint: this.checkpoint, hintsUsed: this.hintsUsed, nook: this.nookFound })); } catch { /* storage unavailable */ }
   }
   clearScratch() { clearFloodScratch(); }
 
@@ -149,9 +153,9 @@ export class FloodScene extends Phaser.Scene {
   showHowTo() {
     this.app.openModal(`<p class="overline">HOW TO PLAY</p><h2>The Rising Flood</h2>
       <p class="reading"><b>🎯 Your goal:</b> walk Aaron to the pulsing golden square ✦ across the water. Tap any square and he walks there by himself.</p>
-      <p class="reading"><b>🎨 The squares:</b> PALE = high ground — it never floods. GREEN = low ground — it floods when the water reaches HIGH. DARK BLUE = deep water — Aaron can never step into it. A square tinted light blue is shallow water: he can wade through it.</p>
+      <p class="reading"><b>🪨 Read the ground:</b> diagonal rock hatch = high ground (never floods); grass strokes = middle ground (wades at RISING, floods at HIGH); round gravel = low basin (floods first). Deep channels have wave marks. These patterns distinguish terrain without color.</p>
       <p class="reading"><b>💧 The water:</b> it has three levels — LOW, RISING, HIGH — shown in the banner at the top. It rises only when YOU press 🌧 Raise the water (in Stage 3 it also rises by itself once Aaron is in the river). If the water rises over the square Aaron is standing on, he washes back to the last ⚑ checkpoint flag — or the last safe bank in the final crossing. His crates and plank stay where they are.</p>
-      <p class="reading"><b>🔭 Forecast:</b> this button PRE-VIEWS the future. Press once = how the board will look at the NEXT water level. Press again = the level after that. In the preview, squares tinted blue will be UNDERWATER. Always check the forecast before raising the water.</p>
+      <p class="reading"><b>🔭 Forecast:</b> this button PRE-VIEWS the future. Press once = the NEXT water level; press again = one level later. Each walkable square gets a mark: ✓ safe, ~ wading, × unsafe. Always check before raising the water.</p>
       <p class="reading"><b>🧱 Things in the squares:</b><br>📦 <b>Crate</b> — stand next to it and tap it to push it. A crate pushed into water becomes a platform you can stand on.<br>🪵 <b>Plank</b> — step on it to pick it up and carry it. Then tap a dark-blue gap next to Aaron to lay it down as a bridge.<br>🟡 <b>Golden switch</b> — step on it to flip it. It opens a stone gate somewhere. (In Stage 3 the switch is a DRAIN — it lowers the water one level.)<br>⬛ <b>Stone gate</b> (marked ✕) — a closed door. Only a golden switch opens it.<br>▼ <b>Cliff arrow</b> — you may DROP down in the arrow’s direction. You can never climb back up.<br>⚑ <b>Flag</b> — a checkpoint. Wash away, and you return here.</p>
       <p class="reading"><b>🔘 The buttons:</b> 🌧 <b>Raise the water</b> — the water goes up one level. Only press it while Aaron stands somewhere that will stay dry! 🔭 <b>Forecast</b> — preview the next levels. 💡 <b>Hint</b> — up to 3 hints per stage. ↺ <b>Reset stage</b> — start this stage over. ❓ <b>How to play</b> — this page.</p>
       <p class="reading"><b>⌨️ Keyboard:</b> use the arrow keys or WASD to move one square at a time. Moving toward a crate pushes it; moving toward an empty gap while carrying the plank places it. Press E, Space, or Enter beside a placed plank to pick it back up.</p>
@@ -209,10 +213,16 @@ export class FloodScene extends Phaser.Scene {
       else {
         g.fillStyle([0xb3a077, 0x7fae5f, 0xd8c08d][info.elev], 1); g.fillRect(X, Y, CELL, CELL);
         if (info.elev === 1) {
+          // Low ground is marked with grass strokes in every color mode.
           g.lineStyle(2, 0x5d8a49, 0.8);
           for (let i = 0; i < 3; i++) { const tx = X + 10 + hash(x + i * 3, y + 1, 42), ty = Y + 14 + hash(x + 2, y + i * 4, 38); g.lineBetween(tx, ty + 5, tx + 2, ty); }
+        } else if (info.elev === 2) {
+          // High ground has a raised diagonal rock hatch.
+          g.lineStyle(2, 0x796a4e, 0.82);
+          for (let i = 0; i < 3; i++) { const hx = X + 8 + i * 17; g.lineBetween(hx, Y + 7, hx + 13, Y + 20); }
         } else {
-          g.fillStyle(info.elev === 2 ? 0xbfa26c : 0x9c8a64, 0.55);
+          // Low basin ground has round gravel marks.
+          g.fillStyle(0x9c8a64, 0.65);
           for (let i = 0; i < 3; i++) g.fillCircle(X + 8 + hash(x + i * 11, y + 3, 46), Y + 8 + hash(x + 5, y + i * 7, 46), 2);
         }
         if (info.elev === 2) {
@@ -256,6 +266,7 @@ export class FloodScene extends Phaser.Scene {
       if (wFill) {
         wg.fillStyle(wFill, wAlpha);
         wg.fillRect(X, Y, CELL, CELL);
+        if (cls === 'deep' || cls === 'gap') { wg.lineStyle(2, 0xd5e9f8, 0.55); wg.lineBetween(X + 9, Y + 8, X + 22, Y + 8); wg.lineBetween(X + 38, Y + 51, X + 53, Y + 51); }
         wg.lineStyle(2, 0x9fc8ee, 0.35);
         const o1 = hash(x, y, 18), o2 = hash(x + 9, y + 4, 18);
         wg.lineBetween(X + 8, Y + 18 + o1, X + 30, Y + 16 + o1); wg.lineBetween(X + 34, Y + 40 + o2, X + 56, Y + 38 + o2);
@@ -268,8 +279,11 @@ export class FloodScene extends Phaser.Scene {
     if (fcState) for (let y = 0; y < st.h; y++) for (let x = 0; x < st.w; x++) {
       const { x: px, y: py } = this.cellXY(x, y);
       const cls = cellClass(st, s, x, y), fc = cellClass(st, fcState, x, y);
-      if (fc === 'deep' && cls !== 'deep') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x2c5f9e, 0.32));
-      else if (fc === 'wade' && cls === 'dry') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x5b8fd6, 0.15));
+      if (!['dry', 'wade', 'deep'].includes(fc)) continue;
+      if (fc === 'deep') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x2c5f9e, 0.4));
+      else if (fc === 'wade') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x5b8fd6, 0.23));
+      else if (cls !== 'dry') layer.add(this.add.rectangle(px, py, CELL - 2, CELL - 2, 0x6e9b5b, 0.2));
+      layer.add(label(this, px - CELL / 2 + 10, py - CELL / 2 + 9, fc === 'deep' ? '×' : fc === 'wade' ? '~' : '✓', fc === 'deep' ? '#fff' : fc === 'wade' ? '#164f80' : '#314c28', 13));
     }
     // Pass 4 — props as drawn objects: barred gates, levers, drain wheel,
     // checkpoint flags, the goal.
@@ -535,7 +549,7 @@ export class FloodScene extends Phaser.Scene {
     if (st.id !== 'stage3') {
       this.app.dialogue('Guide', [`${st.name} — crossed. The valley opens ahead, and the storm is still gathering.`], {
         fiction: false, reference: 'Genesis 6–7', onComplete: () => {
-          this.stageIdx++; this.stage = STAGES[this.stageIdx];
+          this.stageIdx++; this.variant = Math.random() < 0.5 ? 'base' : 'mirror'; this.stage = this.selectedStage();
           this.s = this.stage.initial(); this.checkpoint = [...this.stage.start];
           this.hintsUsed = 0; this.forecast = 0; this.finaleArmed = false; this.lastBank = [...this.stage.start]; this.walkToken++;
           this.offX = (960 - this.stage.w * CELL) / 2; this.offY = (640 - this.stage.h * CELL) / 2;

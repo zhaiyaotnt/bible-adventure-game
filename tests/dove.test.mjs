@@ -4,7 +4,7 @@ import {
   FLIGHT_DT, initialFlightState, sampleWind, stepFlight, staminaCost,
   objectiveStatus, flightFailure, simulateRoute, updraftAt,
 } from '../src/stories/noah/dove.js';
-import { FLIGHTS } from '../src/stories/noah/doveLevels.js';
+import { FLIGHTS, mirrorFlight } from '../src/stories/noah/doveLevels.js';
 
 const [F1, F2, F3] = FLIGHTS;
 const calm = {
@@ -147,4 +147,15 @@ test('route · F3 central route still completes across the 18s wind change', () 
   const r = simulateRoute(F3, [{ x: 700, y: 620 }, { x: 1200, y: 600 }, { x: 1600, y: 640 }, { x: 2050, y: 650 }], {});
   assert.equal(r.completed, true);
   assert.ok(s.stamina > 0); // the pre-hover itself is survivable
+});
+
+test('route variant · mirrored authored routes remain completable', () => {
+  for (const [name, level, waypoints] of ROUTES) {
+    const mirrored = mirrorFlight(level);
+    const path = waypoints.map(p => ({ ...p, y: level.world.height - p.y }));
+    const result = simulateRoute(mirrored, path);
+    assert.equal(result.failure, null, `${name} mirror failed: ${result.failure}`);
+    assert.equal(result.completed, true, `${name} mirror did not complete`);
+    assert.ok(result.stamina >= 12, `${name} mirror margin ${result.stamina.toFixed(1)}`);
+  }
 });

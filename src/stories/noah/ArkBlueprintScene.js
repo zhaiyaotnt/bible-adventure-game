@@ -105,6 +105,10 @@ export class ArkBlueprintScene extends Phaser.Scene {
     const b=text(this,this.phonePortrait?118:876,this.phonePortrait?16:64,'← Meadow',{fontFamily:'Arial',fontSize:this.phonePortrait?'19px':'15px',color:ink,backgroundColor:'#e2d1a7',padding:{x:13,y:10}}).setOrigin(this.phonePortrait?0:1,0).setInteractive({useHandCursor:true});
     b.on('pointerdown',()=>this.leave());
     this.board.add(b);this.addZone(b,()=>this.leave());
+    if(this.stage>0){
+      const reset=text(this,this.phonePortrait?842:690,this.phonePortrait?16:64,'↺ Reset stage',{fontFamily:'Arial',fontSize:this.phonePortrait?'18px':'14px',color:ink,backgroundColor:'#e2d1a7',padding:{x:12,y:10}}).setOrigin(1,0).setInteractive({useHandCursor:true});
+      reset.on('pointerdown',()=>this.resetStage());this.board.add(reset);this.addZone(reset,()=>this.resetStage());
+    }
   }
   stageTitle(title,sub){
     // Portrait now frames the whole stage at fit zoom (~0.31), which
@@ -156,7 +160,7 @@ export class ArkBlueprintScene extends Phaser.Scene {
     try{all=JSON.parse(localStorage.getItem(BUILD_SCRATCH_KEY)||'{}');}catch{all={};}
     if(this.flags()[doneKey]){if(all[stage]){delete all[stage];this.saveBuildScratch(all);}return null;}
     let setup=normalizeStageSetup(stage,all[stage]);
-    if(!setup||(placedCount===0&&!all[stage]?.locked)){
+    if(!setup){
       setup=rollStageSetup(stage);
       all[stage]={...setup,locked:placedCount>0};
       this.saveBuildScratch(all);
@@ -299,13 +303,13 @@ export class ArkBlueprintScene extends Phaser.Scene {
     this.time.delayedCall(1100,()=>this.spawnLeaks());
   }
   spawnLeaks(){
-    const order=[0,1,2].sort(()=>Math.random()-.5);
-    const count=Math.random()<.5?2:3;
+    const setup=this.stageSetup(3,5)??rollStageSetup(3);
     this.leaks=[];
-    this.ping(480,this.phonePortrait?246:232,'Leaks! Tap each 💧 to patch it with pitch.');
-    for(let i=0;i<count;i++){
-      const lx=this.X(-240+Math.random()*480),ly=this.Y(this.seamY[order[i]]);
+    this.ping(480,this.phonePortrait?246:232,`Rain test: patch ${setup.leaks.length} leaks. Look for the blue drops on the seams.`);
+    for(const {seam,t,id} of setup.leaks){
+      const lx=this.X(-280+t*560),ly=this.Y(this.seamY[seam]);
       const leak=text(this,lx,ly,'💧',{fontSize:'27px'}).setOrigin(.5).setDepth(62).setInteractive({useHandCursor:true});
+      leak.__leakId=id;
       this.tweens.add({targets:leak,y:ly+7,duration:380,yoyo:true,repeat:-1});
       leak.on('pointerdown',()=>this.patchLeak(leak));
       this.board.add(leak);
@@ -467,6 +471,11 @@ export class ArkBlueprintScene extends Phaser.Scene {
     }
     const key=piece.id.replace('deck-',''),level=this.deckLevels[key],ty=this.Y(level.y);
     if(Math.abs(piece.x-this.X(0))<110&&Math.abs(piece.y-ty)<52){
+      if(!f.pillar_mid_placed||!f.pillar_up_placed){
+        piece.setPosition(piece.homeX,piece.homeY);
+        this.ping(this.X(0),ty-48,'Set both support posts first. Every deck needs a firm support.');
+        return;
+      }
       const needed=this.pillarFor[key];
       if(needed&&!f[needed==='pillar-mid'?'pillar_mid_placed':'pillar_up_placed']){
         // No support yet: the deck goes on, sags, and Aaron takes it back.
@@ -512,6 +521,20 @@ export class ArkBlueprintScene extends Phaser.Scene {
     const progress=this.app.save.stories[this.story.id];if(!progress.completedScenes.includes('ark_blueprint'))progress.completedScenes.push('ark_blueprint');
     this.app.persist();this.celebrate(480,320);
     this.time.delayedCall(800,()=>this.drawCompletion());
+  }
+  resetStage(){
+    if(this.raining)return;
+    const keys={
+      1:['beam_keel_placed','beam_a_placed','beam_b_placed','beam_a_rotated','beam_b_rotated','ark_ribs_done','blueprint_stage_one'],
+      2:['pillar_mid_placed','pillar_up_placed','deck_lower_placed','deck_middle_placed','deck_upper_placed','ark_decks_done'],
+      3:['seam_1_placed','seam_2_placed','seam_3_placed','door_placed','window_placed','ark_sealed_done','blueprint_stage_two','blueprint_complete'],
+    }[this.stage]??[];
+    const f=this.flags();for(const key of keys)delete f[key];
+    if(this.stage===3){const progress=this.app.save.stories[this.story.id];progress.completedScenes=progress.completedScenes.filter(id=>id!=='ark_blueprint');}
+    let all={};try{all=JSON.parse(localStorage.getItem(BUILD_SCRATCH_KEY)||'{}');}catch{all={};}
+    delete all[this.stage];this.saveBuildScratch(all);
+    this.app.persist();this.selected=null;this.drawStage();this.updateHUD();
+    this.ping(480,this.phonePortrait?246:232,'Stage reset. The pieces and rain test are ready to try again.');
   }
   drawCompletion(){
     this.stage=0;this.visualStage=3;this.board.removeAll(true);this.pieces=[];this.slots=[];this.zones=[];
