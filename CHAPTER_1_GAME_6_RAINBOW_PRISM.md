@@ -643,11 +643,12 @@ Actions compute the complete evaluation synchronously, then render it. Tween pro
 
 ### Pointer/touch
 
-- Tap a piece to select.
-- Tap the selected mirror again or use `Rotate`.
-- Tap `Move`, then a highlighted compatible mount.
+- Tap a piece once to select it.
+- Tap a selected mirror again to rotate it.
+- Press and drag a selected movable piece to a compatible mount. A highlighted mount marks a valid drop target; releasing elsewhere cancels the move.
 - Tapping an empty board cell exits move mode but keeps selection.
-- Dragging is optional sugar; all movement must work with taps.
+- On touch devices, hide the piece selector, Previous/Next, Rotate, Move, and mount-choice buttons. Keep Undo, Reset, Hint, and Trace Paths visible.
+- On mouse/keyboard layouts, keep the toolbar controls as accessible alternatives.
 - Fit the whole board; no pan/zoom.
 - Canvas hit areas are at least 52×52 logical pixels; DOM targets at least 44 CSS pixels.
 
