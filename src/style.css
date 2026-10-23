@@ -73,3 +73,18 @@ canvas{image-rendering:auto;touch-action:none}
 .flood-controls button{background:#ead097;color:#2a4438;border:3px solid #a69263;border-radius:8px;padding:8px 9px;font:600 12.5px system-ui,sans-serif;box-shadow:0 3px 0 #344b36;cursor:pointer;white-space:nowrap}
 .flood-controls button:disabled{opacity:.45;cursor:default}
 .flood-controls button.active{background:#9fd3f2;border-color:#4a7ba6}
+.dove-hud{position:absolute;inset:0;pointer-events:none;z-index:9}
+.dove-stamina{position:absolute;left:12px;bottom:calc(108px + env(safe-area-inset-bottom));width:180px;background:rgba(23,42,38,.72);border-radius:10px;padding:8px 10px;color:#fff1cf;font:600 11px system-ui,sans-serif}
+.dove-stamina-top{display:flex;justify-content:space-between;letter-spacing:.08em}
+.dove-bar{height:12px;background:rgba(255,255,255,.18);border-radius:6px;margin:5px 0;overflow:hidden}
+.dove-fill{height:100%;width:100%;background:#8fd07a;border-radius:6px;transition:width .2s}
+.dove-fill.low{background:#e86a5a;animation:dove-pulse 1s infinite}
+@keyframes dove-pulse{50%{opacity:.45}}
+.dove-status{font-weight:600;letter-spacing:.02em}
+.dove-wind-arrow{display:inline-block;transition:transform .3s}
+.dove-buttons{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(108px + env(safe-area-inset-bottom));display:flex;gap:6px;pointer-events:auto}
+.dove-buttons button{background:#ead097;color:#2a4438;border:3px solid #a69263;border-radius:8px;padding:8px 9px;font:600 12.5px system-ui,sans-serif;box-shadow:0 3px 0 #344b36;cursor:pointer;white-space:nowrap}
+.dove-boost{position:absolute;right:14px;bottom:calc(196px + env(safe-area-inset-bottom));width:78px;height:78px;border-radius:50%;background:#9fd3f2;color:#1d3a52;border:3px solid #4a7ba6;font:700 13px system-ui,sans-serif;box-shadow:0 3px 0 #344b36;cursor:pointer;pointer-events:auto;touch-action:none}
+.dove-boost:active{background:#6db3e8}
+.dove-live{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:520px){.dove-stamina{width:140px}.dove-stamina .dove-bar{height:10px}}

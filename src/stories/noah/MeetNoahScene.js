@@ -213,11 +213,17 @@ export class MeetNoahScene extends ExploreScene {
     if(f.blueprint_complete&&!f.preview_complete){this.app.dialogue('The ark is finished!',this.story.content.complete,{fiction:false,reference:this.story.content.reference,onComplete:()=>this.completeQuest()});return;}
     if(f.blueprint_complete&&!f.mx_complete){this.app.dialogue('Noah',this.story.content.mystery_invite,{fiction:true,reference:'Genesis 6:14–16',onComplete:()=>this.app.router.story(this.story.id,'ark_interior')});return;}
     if(f.mx_complete&&!f.flood_complete){this.app.dialogue('Noah',this.story.content.flood_invite,{fiction:true,reference:'Genesis 7:10–16',onComplete:()=>this.app.router.story(this.story.id,'rising_flood')});return;}
+    if(f.flood_complete&&!f.dove_complete){this.app.dialogue('Noah',this.story.content.dove_invite,{fiction:true,reference:'Genesis 8:1–9',onComplete:()=>this.app.router.story(this.story.id,'doves_journey')});return;}
+    if(f.dove_complete){this.app.dialogue('Noah',this.story.content.dove_done,{fiction:false,reference:'Genesis 8–9',onComplete:()=>this.replayDoves()});return;}
     if(f.flood_complete){this.app.dialogue('Noah',this.story.content.flood_done,{fiction:true,reference:'Genesis 7:16'});return;}
     if(f.build_unlocked){this.app.dialogue('Noah',this.story.content.build_progress,{fiction:true,reference:'Genesis 6:14–16'});return;}
     if(f.supply_quest_complete&&f.pitch_taken){this.app.dialogue('Noah',this.story.content.build_start,{fiction:true,reference:'Genesis 6:14–16',onComplete:()=>{f.build_unlocked=true;this.app.persist();this.updateObjective();this.showFeedback('Quest updated · Help Noah build the ark');this.hotspots=this.hotspots.filter(h=>!(h.x===1110&&h.y===245));this.hotspot(1110,245,this.planLabel(),()=>this.studyBlueprint(),88);}});return;}
     if(f.supply_quest_complete&&!f.pitch_taken){this.app.dialogue('Noah',this.story.content.pitch_reminder,{fiction:true,reference:'Genesis 6:14'});return;}
     this.app.dialogue('Noah',this.story.content.after_talk,{reference:this.story.content.reference});
+  }
+  replayDoves(){
+    this.app.openModal(`<p class="overline">FLY AGAIN</p><h2>The Dove's Journey</h2><p class="reading">Fly any of the dove's three flights again — for the joy of it. Noah's story and your rewards stay exactly as they are.</p><button data-flight="0">Flight 1 · No Place to Rest</button> <button data-flight="1">Flight 2 · The Olive Leaf</button> <button data-flight="2">Flight 3 · A New Beginning</button>`,'reading');
+    for(const b of document.querySelectorAll('[data-flight]'))b.onclick=()=>{this.app.doveReplayFlight=Number(b.dataset.flight);this.app.closeModal();this.app.router.story(this.story.id,'doves_journey');};
   }
   inspectArk(){
     const f=this.flags();if(!f.met_noah){this.app.dialogue('The unfinished ark',this.story.content.before_noah,{fiction:false,reference:this.story.content.reference});return;}
@@ -255,7 +261,7 @@ export class MeetNoahScene extends ExploreScene {
   updateObjective(){
     const f=this.flags(),bag=this.inventory(),wood=inventoryCount(bag,'wood'),rope=inventoryCount(bag,'rope'),tool=inventoryCount(bag,'tool'),pitch=inventoryCount(bag,'pitch');
     const ribs=f.ark_ribs_done||f.blueprint_stage_one;
-    const objective=f.flood_complete?'Chapter complete! Keep exploring, or return to your room.':f.mx_complete?'Dark clouds are gathering over the valley — talk to Noah about the coming flood.':f.blueprint_complete&&!f.preview_complete?'Tell Noah the ark is finished!':f.blueprint_complete?'The ark is finished — but inside is a mystery. Explore the ark and step inside!':f.preview_complete?'Chapter complete! Keep exploring, or return to your room.':f.build_unlocked?`Build the ark with Noah: ribs ${ribs?'✓':'…'} · decks ${f.ark_decks_done?'✓':'…'} · sealing …`:!f.met_noah?'Find Noah somewhere in the meadow.':!f.inspected_ark?'Take a closer look at the ark.':!f.supply_quest_complete?`Find supplies: wood ${wood}/3 · rope ${rope}/2 · tool ${tool}/1 · pitch ${pitch}/1`:'Return to Noah with the supplies.';
+    const objective=f.dove_complete?'Chapter complete! Keep exploring, or return to your room.':f.flood_complete?'The waters are going down — talk to Noah about sending out the dove.':f.mx_complete?'Dark clouds are gathering over the valley — talk to Noah about the coming flood.':f.blueprint_complete&&!f.preview_complete?'Tell Noah the ark is finished!':f.blueprint_complete?'The ark is finished — but inside is a mystery. Explore the ark and step inside!':f.preview_complete?'Chapter complete! Keep exploring, or return to your room.':f.build_unlocked?`Build the ark with Noah: ribs ${ribs?'✓':'…'} · decks ${f.ark_decks_done?'✓':'…'} · sealing …`:!f.met_noah?'Find Noah somewhere in the meadow.':!f.inspected_ark?'Take a closer look at the ark.':!f.supply_quest_complete?`Find supplies: wood ${wood}/3 · rope ${rope}/2 · tool ${tool}/1 · pitch ${pitch}/1`:'Return to Noah with the supplies.';
     this.app.showHUD('Noah’s Meadow',objective,'NOAH’S ARK · CHAPTER 01');
     this.hotspots=this.hotspots.filter(h=>{const item=this.materialSpots().find(i=>i.x===h.x&&i.y===h.y);return !item||!f[item.key];});
   }

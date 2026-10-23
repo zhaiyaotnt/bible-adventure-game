@@ -14,7 +14,8 @@
     "meet_noah",
     "ark_blueprint",
     "ark_interior",
-    "rising_flood"
+    "rising_flood",
+    "doves_journey"
   ],
   "published": true,
   "subtitle": "Explore Noah’s camp, gather supplies, and help build the ark.",
@@ -128,6 +129,64 @@
     ],
     "flood_done": [
       "You saw it with your own eyes, Aaron: I did not shut the door of the ark. God shut it — and He always keeps what He promises."
+    ],
+    "dove_invite": [
+      "Aaron, look — the mountaintops are appearing above the water. God made a wind pass over the earth, and the flood is going down.",
+      "But is the ground dry enough for us to leave the ark? I will send out a dove to see. A dove cannot rest on water — if it finds no resting place, it will come back to us.",
+      "You have quick eyes. Guide the dove for me: watch the wind, plan the way back, and do not let it tire. Are you ready?"
+    ],
+    "dove_flight1_briefing": [
+      "First flight. Fly out over the water and look for any sign that the land is coming back — branches floating, a ridge near the surface, anything.",
+      "Find two signs, then bring the dove home to the ark. Remember: a dove that finds no resting place must return, or it will tire over the endless water."
+    ],
+    "dove_flight1_return": [
+      "The dove came back to Noah, because the water still covered the whole earth — it found no resting place for its feet.",
+      "So Noah reached out his hand and took the dove back into the ark. We wait, Aaron. God has not forgotten us."
+    ],
+    "dove_seven_days_1": [
+      "Noah waited seven more days.",
+      "Then he sent the dove out again — this time, it might come back with news."
+    ],
+    "dove_flight2_briefing": [
+      "Second flight. Somewhere to the east, the tops of the trees are out of the water. If the dove finds an olive tree, it will bring back a leaf.",
+      "The olive tree has silver-green leaves and a split, pale trunk. Dark trees are not it — do not be fooled."
+    ],
+    "dove_flight2_return": [
+      "Towards evening the dove returned — and look! A freshly plucked olive leaf in its beak!",
+      "Then Noah knew the waters had gone down from the earth. The land is coming back to life."
+    ],
+    "dove_seven_days_2": [
+      "Noah waited seven more days. The ark was quiet, and everyone watched the window.",
+      "Then he sent the dove out for the third time."
+    ],
+    "dove_flight3_briefing": [
+      "Third flight — and this one is different. This time, dove, find a green grove and stay there. Do not come back to the ark.",
+      "If the land is truly alive again, the dove will not return. That silence will be the best news of all."
+    ],
+    "dove_flight3_landing": [
+      "The dove settled on a branch in the green grove — and did not return to the ark.",
+      "The earth was drying. A new beginning had come."
+    ],
+    "dove_wait_for_command": [
+      "But Noah did not rush out. The dove was gone and the ground was drying — still he waited inside the ark.",
+      "He would not leave until God Himself told him to. Noah had learned to wait for God's word, not just for good news."
+    ],
+    "dove_leave_ark": [
+      "Then God spoke to Noah: “Come out of the ark, you and your family — and bring out every living thing with you, so they can fill the earth.”",
+      "So Noah came out, with his wife, his sons and their wives — and every animal and bird came out of the ark into the new world."
+    ],
+    "dove_offering": [
+      "Noah's first act in the new world was not to build a house. He built an altar, and worshiped the LORD.",
+      "And God promised in His heart: never again would a flood destroy all life on the earth."
+    ],
+    "dove_covenant": [
+      "God blessed Noah and his sons, and made a covenant — with them, with their descendants, and with every living creature.",
+      "“I have set my rainbow in the clouds,” God said, “and it will be the sign of the covenant between me and the earth.”",
+      "Whenever the rainbow appears in the clouds, God remembers His promise. And so do we."
+    ],
+    "dove_done": [
+      "The ark is empty, the altar is built, and the rainbow is in the sky. You guided the dove well, Aaron — and you learned to wait with Noah.",
+      "Noah's chapter is complete. If you would like to fly with the dove again, just say the word."
     ]
   }
 }
