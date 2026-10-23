@@ -646,7 +646,7 @@ Actions compute the complete evaluation synchronously, then render it. Tween pro
 - Tap a piece to select.
 - Tap the selected mirror again or use `Rotate`.
 - Tap `Move`, then a highlighted compatible mount.
-- Tapping empty board exits move mode but keeps selection.
+- Tapping an empty board cell exits move mode but keeps selection.
 - Dragging is optional sugar; all movement must work with taps.
 - Fit the whole board; no pan/zoom.
 - Canvas hit areas are at least 52×52 logical pixels; DOM targets at least 44 CSS pixels.
@@ -654,10 +654,10 @@ Actions compute the complete evaluation synchronously, then render it. Tween pro
 ### Keyboard
 
 - `[` / `]`: previous/next interactive piece.
-- `R` or Space: rotate mirror.
+- `R` or Space: rotate the selected mirror.
 - `M`: enter/exit move mode.
-- Arrow keys in move mode: cycle compatible mounts spatially.
-- Enter: place at highlighted mount.
+- Arrow keys in move mode: move the highlighted mount to a compatible mount in that direction.
+- Enter: place at the highlighted mount.
 - `U`: undo.
 - `X`: reset confirmation.
 - `H`: next hint.
@@ -669,10 +669,10 @@ Actions compute the complete evaluation synchronously, then render it. Tween pro
 Use real buttons:
 
 ```text
-Previous | Next | Rotate | Move | Undo | Reset | Hint | Trace paths
+Previous | Piece selector | Next | Rotate | Move | Undo | Reset | Hint | Trace paths
 ```
 
-Hide Move for fixed pieces and disable impossible actions. On narrow phones, keep four primary actions visible and put Reset/Hint/Trace under `More`.
+Hide Move for fixed pieces and disable impossible actions. On narrow phones, let the toolbar wrap while preserving the button order and minimum touch-target height.
 
 ### Accessible state
 
@@ -1020,15 +1020,17 @@ Manually test keyboard-only, touch portrait/landscape, Reduced Motion, reload mi
 
 ---
 
-## 24. Current-session handoff
+## 24. Historical handoff
 
-At the time this specification was written:
+**Historical note — superseded.** This section records the state of the repository when the initial Game 6 specification was drafted. It is not a current implementation checklist.
+
+At that time:
 
 - Game 6 existed only as a 146-line high-level draft.
 - The local checkout was at commit `581b0fc` and contained no Game 5 implementation files.
 - The user confirmed Game 5 is implemented elsewhere and authorized changing its ending.
 - A remote fetch was attempted, but the execution approval service rejected it because its usage limit was reached. No fetch, pull, Game 5 code edit, commit, or push occurred.
 
-The next implementation session must synchronize Game 5, inspect its actual flags/rewards/finale, and then apply section 2 instead of guessing at stale files.
+Game 5 and Game 6 have since been integrated in the current repository. Do not use the old synchronization instructions above as current work.
 
 The final product decision is: **Game 5 ends after Noah's offering; Game 6 owns the covenant rainbow and Chapter 1 completion.**
