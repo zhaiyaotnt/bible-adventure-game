@@ -355,7 +355,10 @@ export class ArkBlueprintScene extends Phaser.Scene {
       c.add(this.add.rectangle(0,0,w,h,0xf3e3b3).setStrokeStyle(3,0x6e4c2e));
       const g=this.add.graphics();g.lineStyle(2,0x6e4c2e);g.lineBetween(0,-h/2,0,h/2);g.lineBetween(-w/2,0,w/2,0);c.add(g);
     }
-    c.setSize(w,h).setInteractive(new Phaser.Geom.Rectangle(-w/2-14,-h/2-14,w+28,h+28),Phaser.Geom.Rectangle.Contains);
+    // Pieces are picked by the scene-level touch handler below. Keeping
+    // overlapping Phaser game-object hit areas here lets a wide deck mask a
+    // nearby support post on touch screens.
+    c.setSize(w,h);
     c.id=id;c.kind=kind;c.placed=false;c.setDepth(20);c.grabW=w;c.grabH=h;
     // A rib's visual centre is its arc centre, offset below the container origin.
     if(kind==='rib')c.arcOffsetY=h/2-6;
@@ -363,14 +366,6 @@ export class ArkBlueprintScene extends Phaser.Scene {
     // a tap on a piece always has a visible answer.
     const ring=this.add.rectangle(0,0,w+12,h+12,0x000000,0).setStrokeStyle(3,0xffd968).setVisible(false);
     ring.name='selring';c.addAt(ring,0);
-    // Pick pieces through Phaser's own game-object input rather than
-    // manual bounds checks: container bounds are unreliable for pieces
-    // drawn with Graphics (the ribs), which made them hard to grab.
-    c.on('pointerdown',pointer=>{
-      if(this.app.isBlocked()||this.raining||c.placed)return;
-      this.selectPiece(c);
-      this.dragging=c;this.dragOffset={x:c.x-pointer.worldX,y:c.y-pointer.worldY};c.setDepth(40);
-    });
     this.pieces.push(c);this.board.add(c);return c;
   }
   selectPiece(piece){
@@ -403,17 +398,22 @@ export class ArkBlueprintScene extends Phaser.Scene {
     }
     if(this.app.isBlocked()||this.raining)return;
     for(const z of this.zones??[])if(pointer.worldX>=z.left&&pointer.worldX<=z.right&&pointer.worldY>=z.top&&pointer.worldY<=z.bottom){z.action();return;}
-    for(const piece of [...this.pieces].reverse()){
+    const candidates=[];
+    for(const piece of this.pieces){
       if(piece.placed)continue;
       const off=piece.arcOffsetY||0,cos=Math.cos(piece.rotation),sin=Math.sin(piece.rotation);
       const cx=piece.x-off*sin,cy=piece.y+off*cos;
       const r=Math.max(piece.grabW||0,piece.grabH||0)*.62+18;
-      if(Phaser.Math.Distance.Between(pointer.worldX,pointer.worldY,cx,cy)<=r){
-        this.selectPiece(piece);
-        this.dragging=piece;this.dragOffset={x:piece.x-pointer.worldX,y:piece.y-pointer.worldY};piece.setDepth(40);
-        return;
-      }
+      const distance=Phaser.Math.Distance.Between(pointer.worldX,pointer.worldY,cx,cy);
+      if(distance<=r)candidates.push({piece,distance});
     }
+    // Wide deck pieces have intentionally generous touch ranges. Choose the
+    // closest centre first so those ranges cannot swallow the small posts.
+    candidates.sort((a,b)=>a.distance-b.distance);
+    const piece=candidates[0]?.piece;
+    if(!piece)return;
+    this.selectPiece(piece);
+    this.dragging=piece;this.dragOffset={x:piece.x-pointer.worldX,y:piece.y-pointer.worldY};piece.setDepth(40);
   }
   pointerMove(pointer){if(this.dragging&&pointer.isDown)this.dragging.setPosition(pointer.worldX+this.dragOffset.x,pointer.worldY+this.dragOffset.y);}
   pointerUp(){
