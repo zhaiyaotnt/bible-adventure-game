@@ -1,6 +1,6 @@
 import { ExploreScene } from '../../scenes/ExploreScene.js';
 import { rect, label, sparkle, character } from '../../scenes/art.js';
-import { createMysteryRun, loadMysteryState } from './mystery.js';
+import { CLUES, createMysteryRun, loadMysteryState } from './mystery.js';
 import { openArkBlueprint } from './BlueprintUI.js';
 
 // Inside the finished ark (Chapter 1 · Game 3: The Ark Mystery).
